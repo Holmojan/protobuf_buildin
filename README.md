@@ -1,4 +1,5 @@
 # pb_buildin
 
 just declare pb messgae in declare.hpp
-use object directly
+
+and use object directly
