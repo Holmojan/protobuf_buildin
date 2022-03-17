@@ -16,6 +16,7 @@ namespace pb_buildin {
 			mutable uint32_t _pos;
 		public:
 			binary_stream() :_pos(0) {
+				_data.reserve(256);
 			}
 
 			const void* data() const {
@@ -112,7 +113,12 @@ namespace pb_buildin {
 
 			bool write(const void* data, uint32_t len)
 			{
-				_data.resize((std::max)(_data.size(), _pos + len));
+				if (_pos + len > _data.size()) {
+					if (_pos + len > _data.capacity()) {
+						_data.reserve(_data.capacity() * 2);
+					}
+					_data.resize(_pos + len);
+				}
 				memcpy(_data.data() + _pos, data, len);
 				_pos += len;
 				return true;
