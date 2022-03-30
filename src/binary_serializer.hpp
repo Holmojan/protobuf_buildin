@@ -167,6 +167,14 @@ namespace pb_buildin {
 			return bs.write(v);
 		}
 
+		template<typename T>
+		static std::enable_if_t<std::is_enum<T>::value, bool>
+		serialize(const T v, binary_stream& bs, const member_register* member)
+		{
+			return bs.write_varints((uint32_t)v);
+		}
+
+
 		static bool serialize(const int32_t v, binary_stream& bs, const member_register* member)
 		{
 			switch (member->get_type())
@@ -411,6 +419,13 @@ namespace pb_buildin {
 		{
 			ignore_unused(member);
 			return bs.read(v);
+		}
+
+		template<typename T>
+		static std::enable_if_t<std::is_enum<T>::value, bool>
+		deserialize(T& v, const binary_stream& bs, const member_register* member)
+		{
+			return bs.read_varints((uint32_t&)v);
 		}
 
 		static bool deserialize(int32_t& v, const binary_stream& bs, const member_register* member)

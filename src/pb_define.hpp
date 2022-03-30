@@ -40,9 +40,24 @@ namespace pb_buildin {
 	typedef int64_t sfixed64;
 	typedef std::string string;
 	typedef std::string bytes;
+	/*
+	class pb_message_base;
 
+	template<typename T>
+	std::enable_if_t<std::is_base_of<pb_message_base, T>::value, int32_t>
+	get_wire_type(T*, proto_type type) {
+		return 2;
+	}
+	*/
+	template<typename T>
+	std::enable_if_t<std::is_enum<T>::value, int32_t>
+	get_wire_type(T*, proto_type type) {
+		return 0;
+	}
 
-	inline int32_t get_wire_type(proto_type type)
+	template<typename T>
+	std::enable_if_t<!std::is_enum<T>::value, int32_t>
+	get_wire_type(T*, proto_type type)
 	{
 		switch (type)
 		{

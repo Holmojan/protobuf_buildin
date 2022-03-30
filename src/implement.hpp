@@ -60,8 +60,14 @@ namespace pb_buildin {
 		std::string SerializeAsJson()const {
 			std::string s; serialize_to_json(*this, s); return s;
 		}
+		Json::Value SerializeAsJsonValue()const {
+			Json::Value root; serialize_to_json(*this, root); return root;
+		}
 		bool ParseFromJson(const std::string& s) {
 			return deserialize_from_json(s, *this);
+		}
+		bool ParseFromJsonValue(const Json::Value& root) {
+			return deserialize_from_json(root, *this);
 		}
 #endif
 	};

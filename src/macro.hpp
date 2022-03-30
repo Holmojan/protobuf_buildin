@@ -31,7 +31,7 @@
 					typedef std::decay_t<decltype(*this)> message;			\
 					info->offset = member_offsetof(message, _var);			\
 					info->size = member_sizeof(message, _var);				\
-					info->wire_type = get_wire_type(						\
+					info->wire_type = get_wire_type((_raw_type*)nullptr,	\
 						(proto_type)(_raw_type##_PB_TYPE));					\
 					/*info->type_info = &typeid(*/							\
 						/*PB_BUILDIN_TYPE_IDENTITY(_type));*/				\
@@ -136,5 +136,13 @@
 #	define PB_PACKAGE_END													\
 		};
 
+/////////////////////////////////////////////////////////////////////////////
+
+#	define PB_ENUM(_name)													\
+		enum {_name##_PB_TYPE};												\
+		enum class _name : int32_t { 
+
+#	define PB_ENUM_END														\
+		};
 
 #endif

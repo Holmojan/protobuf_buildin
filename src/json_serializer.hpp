@@ -22,6 +22,16 @@ namespace pb_buildin {
 			return true; 
 		}
 
+
+		template<typename T>
+		static std::enable_if_t<std::is_enum<T>::value, bool>
+		serialize(const T v, Json::Value& root, const member_register* member)
+		{
+			ignore_unused(member);
+			root = (int32_t)v;
+			return true;
+		}
+
 		static bool serialize(const int32_t v, Json::Value& root, const member_register* member)
 		{
 			ignore_unused(member);
@@ -182,6 +192,18 @@ namespace pb_buildin {
 			return true; 
 		}
 
+		template<typename T>
+		static std::enable_if_t<std::is_enum<T>::value, bool>
+		deserialize(T& v, const Json::Value& root, const member_register* member)
+		{
+			ignore_unused(member);
+			if (!root.isInt()) {
+				return false;
+			}
+			v = (T)root.asInt();
+			return true;
+		}
+
 		static bool deserialize(int32_t& v, const Json::Value& root, const member_register* member) 
 		{
 			ignore_unused(member);
@@ -191,6 +213,7 @@ namespace pb_buildin {
 			v = root.asInt();
 			return true; 
 		}
+
 		static bool deserialize(int64_t& v, const Json::Value& root, const member_register* member)
 		{
 			ignore_unused(member);
