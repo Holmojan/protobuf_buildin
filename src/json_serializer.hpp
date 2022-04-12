@@ -110,9 +110,14 @@ namespace pb_buildin {
 		static std::enable_if_t<std::is_integral<typename pb_map<T>::key_type>::value, bool>
 		serialize(const pb_map<T>& v, Json::Value& root, const member_register* member)
 		{
+			typedef typename pb_map<T>::pair_type pair_type;
+
+			static pair_type p;
+			auto table = ((pb_message_base&)p).GetDescriptor()->get_member_table();
+
 			Json::Value map = Json::Value(Json::objectValue);
 			for (auto& p : v) {
-				if (!serialize(p.second, map[std::to_string(p.first)], member)) {
+				if (!serialize(p.second, map[std::to_string(p.first)], table[1])) {
 					return false;
 				}
 			}
@@ -124,9 +129,14 @@ namespace pb_buildin {
 		static std::enable_if_t<std::is_same<typename pb_map<T>::key_type, std::string>::value, bool>
 		serialize(const pb_map<T>& v, Json::Value& root, const member_register* member)
 		{
+			typedef typename pb_map<T>::pair_type pair_type;
+
+			static pair_type p;
+			auto table = ((pb_message_base&)p).GetDescriptor()->get_member_table();
+
 			Json::Value map = Json::Value(Json::objectValue);
 			for (auto& p : v) {
-				if (!serialize(p.second, map[p.first])) {
+				if (!serialize(p.second, map[p.first], table[1])) {
 					return false;
 				}
 			}
@@ -318,9 +328,13 @@ namespace pb_buildin {
 		deserialize(pb_map<T>& v, const Json::Value& root, const member_register* member)
 		{
 			typedef typename pb_map<T>::key_type key_type;
+			typedef typename pb_map<T>::pair_type pair_type;
+
+			static pair_type p;
+			auto table = ((pb_message_base&)p).GetDescriptor()->get_member_table();
 
 			for (auto i = root.begin(); i != root.end(); i++) {
-				if (!deserialize(v[(key_type)atoll(i.name().c_str())], *i, member)) {
+				if (!deserialize(v[(key_type)atoll(i.name().c_str())], *i, table[1])) {
 					return false;
 				}
 			}
@@ -330,8 +344,13 @@ namespace pb_buildin {
 		static std::enable_if_t<std::is_same<typename pb_map<T>::key_type, std::string>::value, bool>
 		deserialize(pb_map<T>& v, const Json::Value& root, const member_register* member)
 		{
+			typedef typename pb_map<T>::pair_type pair_type;
+
+			static pair_type p;
+			auto table = ((pb_message_base&)p).GetDescriptor()->get_member_table();
+
 			for (auto i = root.begin(); i != root.end(); i++){
-				if (!deserialize(v[i.name()], *i)) {
+				if (!deserialize(v[i.name()], *i, table[1])) {
 					return false;
 				}
 			}
