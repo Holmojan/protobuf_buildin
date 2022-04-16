@@ -66,7 +66,7 @@ namespace pb_buildin {
 	class class_register
 	{
 	protected:
-		mutable std::vector<const member_register*> _member_table;
+		std::vector<const member_register*> _member_table;
 	public:
 		class_register() {}
 		
@@ -81,7 +81,7 @@ namespace pb_buildin {
 		const std::vector<const member_register*>& get_member_table()const {
 			return _member_table;
 		}
-		void push_member_table(std::function<void(member_info*)> func)const {
+		void push_member_table(std::function<void(member_info*)> func) {
 			_member_table.emplace_back(new member_register(func));
 		}
 	};

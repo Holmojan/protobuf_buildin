@@ -7,12 +7,13 @@
 		enum {_name##_PB_TYPE};												\
 		class _name : public pb_message {									\
 		protected:															\
-			const class_register* GetDescriptor()const{						\
-				static _name instance(true);								\
-				return ((pb_message&)instance).GetDescriptor();}			\
-			_name(bool) : pb_message(new class_register, true) { }			\
+			_name(class_register* p) : pb_message(p) { }					\
 		public:																\
-			_name() : pb_message(GetDescriptor(), false) { }				\
+			static const class_register* GetDescriptor() {					\
+				static class_register _register;							\
+				static _name instance(&_register);							\
+				return ((pb_message&)instance).GetDescriptor();}			\
+			_name() : pb_message(GetDescriptor()) { }						\
 			void Clear(){ *this = _name(); }
 
 #	define PB_MESSAGE_END													\

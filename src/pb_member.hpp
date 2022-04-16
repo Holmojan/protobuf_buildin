@@ -8,8 +8,9 @@ namespace pb_buildin {
 	{
 	protected:
 		std::vector<std::pair<uint32_t, std::string>> _unknown_fields;
-		mutable const class_register* _register = nullptr;
-		bool _resist_instance = false;
+		class_register* _instance_register = nullptr;
+		const class_register* _register = nullptr;
+		//bool _resist_instance = false;
 	public:
 		const std::vector<std::pair<uint32_t, std::string>>& GetUnknownFields()const {
 			return _unknown_fields;
@@ -18,17 +19,20 @@ namespace pb_buildin {
 			_unknown_fields.emplace_back(tag, data);
 		}
 		const class_register* GetDescriptor()const {
-			return _register;
+			return _instance_register ? _instance_register : _register;
 		}
 		void regist_member(std::function<void(member_info*)> func)
 		{
-			if (_resist_instance) {
-				_register->push_member_table(func);
+			if (_instance_register) {
+				_instance_register->push_member_table(func);
 			}
 		}
 
-		pb_message_base(const class_register* p, bool b) :
-			_register(p), _resist_instance(b) {}
+		pb_message_base(const class_register* p) :
+			_instance_register(nullptr), _register(p) {}
+
+		pb_message_base(class_register* p) :
+			_instance_register(p), _register(nullptr) {}
 	};
 
 

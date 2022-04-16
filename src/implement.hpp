@@ -39,8 +39,10 @@ namespace pb_buildin {
 	class pb_message : public pb_message_base
 	{
 	public:
-		pb_message(const class_register* p, bool b) :
-			pb_message_base(p, b) {}
+		pb_message(const class_register* p) :
+			pb_message_base(p) {}
+		pb_message(class_register* p) :
+			pb_message_base(p) {}
 		~pb_message() {}
 
 #if defined(PB_BUILDIN__USE_BINARY_SERIALIZER)

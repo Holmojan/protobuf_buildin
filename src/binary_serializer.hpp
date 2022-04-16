@@ -61,7 +61,7 @@ namespace pb_buildin {
 
 				v = 0;
 
-				for (int i = 0; i<bit; i += 7)
+				for (int i = 0; i < 64/*bit*/; i += 7)
 				{
 					uint8_t t = 0;
 					if (!read(t)) {
@@ -70,11 +70,11 @@ namespace pb_buildin {
 
 					uint8_t w = (t & 0x7f);
 
-					if ((i + 7) > bit && (w & mask)) {
-						return false;
-					}
+					//if ((i + 7) > bit && (w & mask)) {
+					//	return false;
+					//}
 
-					v |= w << i;
+					v |= (T)w << i;
 
 					if (!(t & 0x80)) {
 						break;
@@ -181,7 +181,7 @@ namespace pb_buildin {
 			{
 			case int32_PB_TYPE:
 
-				return bs.write_varints((uint32_t)v);
+				return bs.write_varints((uint64_t)v);
 
 			case sint32_PB_TYPE:
 

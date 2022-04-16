@@ -112,8 +112,7 @@ namespace pb_buildin {
 		{
 			typedef typename pb_map<T>::pair_type pair_type;
 
-			static pair_type p;
-			auto table = ((pb_message_base&)p).GetDescriptor()->get_member_table();
+			auto table = pair_type::GetDescriptor()->get_member_table();
 
 			Json::Value map = Json::Value(Json::objectValue);
 			for (auto& p : v) {
@@ -131,8 +130,7 @@ namespace pb_buildin {
 		{
 			typedef typename pb_map<T>::pair_type pair_type;
 
-			static pair_type p;
-			auto table = ((pb_message_base&)p).GetDescriptor()->get_member_table();
+			auto table = pair_type::GetDescriptor()->get_member_table();
 
 			Json::Value map = Json::Value(Json::objectValue);
 			for (auto& p : v) {
@@ -330,8 +328,7 @@ namespace pb_buildin {
 			typedef typename pb_map<T>::key_type key_type;
 			typedef typename pb_map<T>::pair_type pair_type;
 
-			static pair_type p;
-			auto table = ((pb_message_base&)p).GetDescriptor()->get_member_table();
+			auto table = pair_type::GetDescriptor()->get_member_table();
 
 			for (auto i = root.begin(); i != root.end(); i++) {
 				if (!deserialize(v[(key_type)atoll(i.name().c_str())], *i, table[1])) {
@@ -346,8 +343,7 @@ namespace pb_buildin {
 		{
 			typedef typename pb_map<T>::pair_type pair_type;
 
-			static pair_type p;
-			auto table = ((pb_message_base&)p).GetDescriptor()->get_member_table();
+			auto table = pair_type::GetDescriptor()->get_member_table();
 
 			for (auto i = root.begin(); i != root.end(); i++){
 				if (!deserialize(v[i.name()], *i, table[1])) {
