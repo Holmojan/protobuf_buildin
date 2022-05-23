@@ -74,7 +74,7 @@ namespace pb_buildin {
 					//	return false;
 					//}
 
-					v |= (T)w << i;
+					v |= (uint64_t)w << i;// in c++, i auto mod bit, may get wrong value
 
 					if (!(t & 0x80)) {
 						break;

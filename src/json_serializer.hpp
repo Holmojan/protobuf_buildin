@@ -193,7 +193,7 @@ namespace pb_buildin {
 		static bool deserialize(bool& v, const Json::Value& root, const member_register* member)
 		{
 			ignore_unused(member);
-			if (!root.isBool()) {
+			if (!root.isConvertibleTo(Json::ValueType::booleanValue)) {
 				return false;
 			}
 			v = root.asBool();
@@ -205,7 +205,7 @@ namespace pb_buildin {
 		deserialize(T& v, const Json::Value& root, const member_register* member)
 		{
 			ignore_unused(member);
-			if (!root.isInt()) {
+			if (!root.isConvertibleTo(Json::ValueType::intValue)) {
 				return false;
 			}
 			v = (T)root.asInt();
@@ -215,7 +215,7 @@ namespace pb_buildin {
 		static bool deserialize(int32_t& v, const Json::Value& root, const member_register* member) 
 		{
 			ignore_unused(member);
-			if (!root.isInt()) {
+			if (!root.isConvertibleTo(Json::ValueType::intValue)) {
 				return false;
 			}
 			v = root.asInt();
@@ -225,15 +225,12 @@ namespace pb_buildin {
 		static bool deserialize(int64_t& v, const Json::Value& root, const member_register* member)
 		{
 			ignore_unused(member);
-#if defined(JSON_HAS_INT64)
-			if (!root.isInt64()) {
+			if (!root.isConvertibleTo(Json::ValueType::intValue)) {
 				return false;
 			}
+#if defined(JSON_HAS_INT64)
 			v = root.asInt64();
 #else
-			if (!root.isInt()) {
-				return false;
-			}
 			v = root.asInt();
 #endif
 			return true;
@@ -242,7 +239,7 @@ namespace pb_buildin {
 		static bool deserialize(uint32_t& v, const Json::Value& root, const member_register* member)
 		{
 			ignore_unused(member);
-			if (!root.isUInt()) {
+			if (!root.isConvertibleTo(Json::ValueType::uintValue)) {
 				return false;
 			}
 			v = root.asUInt();
@@ -251,15 +248,12 @@ namespace pb_buildin {
 		static bool deserialize(uint64_t& v, const Json::Value& root, const member_register* member)
 		{
 			ignore_unused(member);
-#if defined(JSON_HAS_INT64)
-			if (!root.isUInt64()) {
+			if (!root.isConvertibleTo(Json::ValueType::uintValue)) {
 				return false;
 			}
+#if defined(JSON_HAS_INT64)
 			v = root.asUInt64();
 #else
-			if (!root.isUInt()) {
-				return false;
-			}
 			v = root.asUInt();
 #endif
 			return true; 
@@ -268,7 +262,7 @@ namespace pb_buildin {
 		static bool deserialize(float& v, const Json::Value& root, const member_register* member)
 		{
 			ignore_unused(member);
-			if (!root.isDouble()) {
+			if (!root.isConvertibleTo(Json::ValueType::realValue)) {
 				return false;
 			}
 			v = root.asFloat();
@@ -277,7 +271,7 @@ namespace pb_buildin {
 		static bool deserialize(double& v, const Json::Value& root, const member_register* member) 
 		{
 			ignore_unused(member);
-			if (!root.isDouble()) {
+			if (!root.isConvertibleTo(Json::ValueType::realValue)) {
 				return false;
 			}
 			v = root.asDouble();
@@ -286,13 +280,12 @@ namespace pb_buildin {
 
 		static bool deserialize(std::string& v, const Json::Value& root, const member_register* member)
 		{
-			if (!root.isString()) {
+			if (!root.isConvertibleTo(Json::ValueType::stringValue)) {
 				return false;
 			}
 			switch (member->get_type())
 			{
 			case bytes_PB_TYPE:
-
 			{
 				std::string u = root.asString();
 				if (!de_base64(u, v)) {
@@ -312,6 +305,10 @@ namespace pb_buildin {
 		template<typename T>
 		static bool deserialize(pb_repeated<T>& v, const Json::Value& root, const member_register* member)
 		{
+			if (!root.isConvertibleTo(Json::ValueType::arrayValue)) {
+				return false;
+			}
+
 			v.resize(root.size());
 			for (size_t i = 0; i < v.size(); i++){
 				if (!deserialize(v[i], root[i], member)) {
@@ -325,6 +322,10 @@ namespace pb_buildin {
 		static std::enable_if_t<std::is_integral<typename pb_map<T>::key_type>::value, bool>
 		deserialize(pb_map<T>& v, const Json::Value& root, const member_register* member)
 		{
+			if (!root.isConvertibleTo(Json::ValueType::objectValue)) {
+				return false;
+			}
+
 			typedef typename pb_map<T>::key_type key_type;
 			typedef typename pb_map<T>::pair_type pair_type;
 
@@ -341,6 +342,10 @@ namespace pb_buildin {
 		static std::enable_if_t<std::is_same<typename pb_map<T>::key_type, std::string>::value, bool>
 		deserialize(pb_map<T>& v, const Json::Value& root, const member_register* member)
 		{
+			if (!root.isConvertibleTo(Json::ValueType::objectValue)) {
+				return false;
+			}
+
 			typedef typename pb_map<T>::pair_type pair_type;
 
 			auto table = pair_type::GetDescriptor()->get_member_table();
@@ -365,6 +370,9 @@ namespace pb_buildin {
 		static bool deserialize(pb_message_base& v, const Json::Value& root, const member_register* member)
 		{
 			ignore_unused(member);
+			if (!root.isConvertibleTo(Json::ValueType::objectValue)) {
+				return false;
+			}
 
 			auto table = v.GetDescriptor()->get_member_table();
 
@@ -429,13 +437,20 @@ namespace pb_buildin {
 	static bool	serialize_to_json(const pb_message_base& pb, Json::Value& root) {
 		return json_serializer::serialize(pb, root, nullptr);
 	}
-	static bool	serialize_to_json(const pb_message_base& pb, std::string& json)
+	static bool	serialize_to_json(const pb_message_base& pb, std::string& json, bool multiline = true)
 	{
 		Json::Value root;
 		if (!serialize_to_json(pb, root)) {
 			return false;
 		}
-		json = root.toStyledString();
+		if (multiline) {
+			json = root.toStyledString();
+		}
+		else {
+			Json::FastWriter writer;
+			writer.omitEndingLineFeed();
+			json = writer.write(root);
+		}
 		return true;
 	}
 
