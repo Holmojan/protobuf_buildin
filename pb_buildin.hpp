@@ -9,9 +9,7 @@
 
 //#	define sscanf_s				sscanf
 //#	define localtime_s(_v,_t)	localtime_r((_t),(_v))
-
 #	include <string.h>
-
 #else
 #	error __FILE__": unsupported ide, compile stoped!" 
 #endif
