@@ -59,10 +59,4 @@ namespace pb_buildin {
 #include "src/macro.hpp"
 
 
-namespace pb_buildin {
-
-#include "declare.hpp"
-
-}
-
 #endif

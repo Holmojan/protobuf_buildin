@@ -56,6 +56,9 @@ namespace pb_buildin {
 		bool ParseFromArray(const void* data, uint32_t len) {
 			return deserialize_from_binary(data, len, *this);
 		}
+		void CopyFrom(const pb_message& from) {
+			ParseFromString(from.SerializeAsString());
+		}
 #endif
 #if defined(PB_BUILDIN__USE_JSON_SERIALIZER)
 	public:

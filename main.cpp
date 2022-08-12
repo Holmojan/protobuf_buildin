@@ -3,6 +3,11 @@
 #define PB_BUILDIN__USE_BINARY_SERIALIZER
 #include "pb_buildin/pb_buildin.hpp"
 
+namespace pb_buildin {
+
+#include "declare.hpp"
+
+}
 
 int main()
 {

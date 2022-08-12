@@ -21,24 +21,44 @@
 
 /////////////////////////////////////////////////////////////////////////////
 
+#	define PB_MEMBER_INIT(_info, _raw_type, _type, _raw_var, _var, _num, _flag)	\
+		{																	\
+			_info->num = _num;												\
+			_info->name = #_raw_var;										\
+			_info->type = (proto_type)(_raw_type##_PB_TYPE);				\
+			_info->flag = _flag;											\
+			typedef std::decay_t<decltype(*this)> message;					\
+			_info->offset = member_offsetof(message, _var);					\
+			_info->size = member_sizeof(message, _var);						\
+			_info->wire_type = get_wire_type((_raw_type*)nullptr,			\
+				(proto_type)(_raw_type##_PB_TYPE));							\
+			/*_info->type_info = &typeid(*/									\
+				/*PB_BUILDIN_TYPE_IDENTITY(_type));*/						\
+			_info->ptr_interface = serialize_implement<						\
+			type_identity_t<_type>>::get_instance();						\
+		}
+
+#if defined(_MSC_VER) && _MSC_VER <= 1800
+
+#	define PB_MEMBER(_raw_type, _type, _raw_var, _var, _num, _flag)			\
+		protected: enum {PB_MEMBER_##_num};									\
+			void init_##_var (member_info* info) { PB_MEMBER_INIT(info,		\
+				 _raw_type, _type, _raw_var, _var, _num, _flag) }			\
+			type_identity_t<_type> _var = { this,							\
+				std::bind(&std::decay_t<decltype(*this)>::init_##_var,		\
+					this, std::placeholders::_1) };							\
+		public:
+
+#else
+
 #	define PB_MEMBER(_raw_type, _type, _raw_var, _var, _num, _flag)			\
 		protected: enum {PB_MEMBER_##_num};									\
 			type_identity_t<_type> _var = { this,							\
-				[&](member_info* info){										\
-					info->num = _num;										\
-					info->name = #_raw_var;									\
-					info->type = (proto_type)(_raw_type##_PB_TYPE);			\
-					info->flag = _flag;										\
-					typedef std::decay_t<decltype(*this)> message;			\
-					info->offset = member_offsetof(message, _var);			\
-					info->size = member_sizeof(message, _var);				\
-					info->wire_type = get_wire_type((_raw_type*)nullptr,	\
-						(proto_type)(_raw_type##_PB_TYPE));					\
-					/*info->type_info = &typeid(*/							\
-						/*PB_BUILDIN_TYPE_IDENTITY(_type));*/				\
-					info->ptr_interface = serialize_implement<				\
-						type_identity_t<_type>>::get_instance();			\
-			} };
+				[&] (member_info* info) { PB_MEMBER_INIT(info,				\
+					_raw_type, _type, _raw_var, _var, _num, _flag) } };		\
+		public:
+
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 

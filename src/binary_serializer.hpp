@@ -379,6 +379,7 @@ namespace pb_buildin {
 				if (!bs.write(data.data(), data.size())) {
 					return false;
 				}
+				break;
 			case 2:
 				if (!bs.write_string(data)) {
 					return false;
