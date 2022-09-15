@@ -1,7 +1,7 @@
 # pb_buildin
 
-just declare pb messgae in declare.hpp
+declare protobuf messgae in cpp files
 
-and use object directly
+without protoc.exe, compile in ide directly
 
-need c++14
+need c++14 at least
