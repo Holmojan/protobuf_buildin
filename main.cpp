@@ -1,5 +1,5 @@
 ﻿
-#define PB_BUILDIN__USE_JSON_SERIALIZER
+//#define PB_BUILDIN__USE_JSON_SERIALIZER
 #define PB_BUILDIN__USE_BINARY_SERIALIZER
 #include "pb_buildin/pb_buildin.hpp"
 
