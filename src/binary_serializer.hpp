@@ -179,15 +179,15 @@ namespace pb_buildin {
 		{
 			switch (member->get_type())
 			{
-			case int32_PB_TYPE:
+			case PB_TYPE(int32):
 
 				return bs.write_varints((uint64_t)v);
 
-			case sint32_PB_TYPE:
+			case PB_TYPE(sint32):
 
 				return bs.write_varints(en_zigzag32(v));
 
-			case sfixed32_PB_TYPE:
+			case PB_TYPE(sfixed32):
 
 				return bs.write(en_zigzag32(v));
 
@@ -200,15 +200,15 @@ namespace pb_buildin {
 		{
 			switch (member->get_type())
 			{
-			case int64_PB_TYPE:
+			case PB_TYPE(int64):
 
 				return bs.write_varints((uint64_t)v);
 
-			case sint64_PB_TYPE:
+			case PB_TYPE(sint64):
 
 				return bs.write_varints(en_zigzag64(v));
 
-			case sfixed64_PB_TYPE:
+			case PB_TYPE(sfixed64):
 
 				return bs.write(en_zigzag64(v));
 
@@ -221,11 +221,11 @@ namespace pb_buildin {
 		{
 			switch (member->get_type())
 			{
-			case uint32_PB_TYPE:
+			case PB_TYPE(uint32):
 
 				return bs.write_varints(v);
 
-			case fixed32_PB_TYPE:
+			case PB_TYPE(fixed32):
 
 				return bs.write(v);
 
@@ -237,11 +237,11 @@ namespace pb_buildin {
 		{
 			switch (member->get_type())
 			{
-			case uint64_PB_TYPE:
+			case PB_TYPE(uint64):
 
 				return bs.write_varints(v);
 
-			case fixed64_PB_TYPE:
+			case PB_TYPE(fixed64):
 
 				return bs.write(v);
 
@@ -433,11 +433,11 @@ namespace pb_buildin {
 		{
 			switch (member->get_type())
 			{
-			case int32_PB_TYPE:
+			case PB_TYPE(int32):
 
 				return bs.read_varints((uint32_t&)v);
 
-			case sint32_PB_TYPE:
+			case PB_TYPE(sint32):
 
 				if (!bs.read_varints((uint32_t&)v)) {
 					return false;
@@ -445,7 +445,7 @@ namespace pb_buildin {
 				v = de_zigzag32(v);
 				return true;
 
-			case sfixed32_PB_TYPE:
+			case PB_TYPE(sfixed32):
 
 				if (!bs.read(v)) {
 					return false;
@@ -462,11 +462,11 @@ namespace pb_buildin {
 		{
 			switch (member->get_type())
 			{
-			case int64_PB_TYPE:
+			case PB_TYPE(int64):
 
 				return bs.read_varints((uint64_t&)v);
 
-			case sint64_PB_TYPE:
+			case PB_TYPE(sint64):
 
 				if (!bs.read_varints((uint64_t&)v)) {
 					return false;
@@ -474,7 +474,7 @@ namespace pb_buildin {
 				v = de_zigzag64(v);
 				return true;
 
-			case sfixed64_PB_TYPE:
+			case PB_TYPE(sfixed64):
 
 				if (!bs.read(v)) {
 					return false;
@@ -491,11 +491,11 @@ namespace pb_buildin {
 		{
 			switch (member->get_type())
 			{
-			case uint32_PB_TYPE:
+			case PB_TYPE(uint32):
 
 				return bs.read_varints(v);
 
-			case fixed32_PB_TYPE:
+			case PB_TYPE(fixed32):
 
 				return bs.read(v);
 
@@ -507,11 +507,11 @@ namespace pb_buildin {
 		{
 			switch (member->get_type())
 			{
-			case uint64_PB_TYPE:
+			case PB_TYPE(uint64):
 
 				return bs.read_varints(v);
 
-			case fixed64_PB_TYPE:
+			case PB_TYPE(fixed64):
 
 				return bs.read(v);
 
@@ -609,9 +609,9 @@ namespace pb_buildin {
 			l += bs.pos();
 
 			auto table = v.GetDescriptor()->get_member_table();
-			for (auto& item : table) {
-				item->clear(&v);
-			}
+			//for (auto& item : table) {
+			//	item->clear(&v);
+			//}
 
 			while (bs.pos() < l)
 			{

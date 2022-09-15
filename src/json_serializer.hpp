@@ -75,7 +75,7 @@ namespace pb_buildin {
 		{
 			switch (member->get_type())
 			{
-			case bytes_PB_TYPE:
+			case PB_TYPE(bytes):
 
 			{
 				std::string u;
@@ -85,7 +85,7 @@ namespace pb_buildin {
 				root = u;
 				return true;
 			}
-			case string_PB_TYPE:
+			case PB_TYPE(string):
 
 				root = v;
 				return true;
@@ -285,7 +285,7 @@ namespace pb_buildin {
 			}
 			switch (member->get_type())
 			{
-			case bytes_PB_TYPE:
+			case PB_TYPE(bytes):
 			{
 				std::string u = root.asString();
 				if (!de_base64(u, v)) {
@@ -293,7 +293,7 @@ namespace pb_buildin {
 				}
 				return true;
 			}
-			case string_PB_TYPE:
+			case PB_TYPE(string):
 
 				v = root.asString();
 				return true;
@@ -414,9 +414,9 @@ namespace pb_buildin {
 				}
 			}
 #else
-			for (auto& item : table) {
-				item.clear(&v);
-			}
+			//for (auto& item : table) {
+			//	item.clear(&v);
+			//}
 #endif
 
 			for (auto& item : table)

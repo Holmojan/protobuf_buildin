@@ -28,6 +28,16 @@ namespace pb_buildin {
 			}
 		}
 
+		void Clear() 
+		{ 
+			auto table = GetDescriptor()->get_member_table();
+			for (auto& item : table) {
+				item->clear(this);
+			}
+			_unknown_fields.clear();
+		}
+
+
 		pb_message_base(const class_register* p) :
 			_instance_register(nullptr), _register(p) {}
 
@@ -50,6 +60,11 @@ namespace pb_buildin {
 			message->regist_member(func);
 		}
 		~pb_map() {}
+
+		value_type at_or(const key_type& k, const value_type& d = {})const {
+			auto itor = find(k);
+			return (itor != end() ? itor->second : d);
+		}
 	};
 
 	template<typename T>

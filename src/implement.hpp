@@ -51,13 +51,16 @@ namespace pb_buildin {
 			std::string s; serialize_to_binary(*this, s); return s;
 		}
 		bool ParseFromString(const std::string& s) {
-			return deserialize_from_binary(s, *this);
+			Clear(); return deserialize_from_binary(s, *this);
 		}
 		bool ParseFromArray(const void* data, uint32_t len) {
-			return deserialize_from_binary(data, len, *this);
+			Clear(); return deserialize_from_binary(data, len, *this);
 		}
 		void CopyFrom(const pb_message& from) {
 			ParseFromString(from.SerializeAsString());
+		}
+		void MergeFrom(const pb_message& from) {
+			deserialize_from_binary(from.SerializeAsString(), *this);
 		}
 #endif
 #if defined(PB_BUILDIN__USE_JSON_SERIALIZER)
@@ -69,10 +72,10 @@ namespace pb_buildin {
 			Json::Value root; serialize_to_json(*this, root); return root;
 		}
 		bool ParseFromJson(const std::string& s) {
-			return deserialize_from_json(s, *this);
+			Clear(); return deserialize_from_json(s, *this);
 		}
 		bool ParseFromJsonValue(const Json::Value& root) {
-			return deserialize_from_json(root, *this);
+			Clear(); return deserialize_from_json(root, *this);
 		}
 #endif
 	};

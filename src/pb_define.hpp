@@ -10,22 +10,24 @@ namespace pb_buildin {
 		PB_BUILDIN_FLAG_PACKED = 0x00000002,
 	};
 
+#define PB_TYPE(_type)			_type##_PB_TYPE
+
 	enum proto_type {
-		bool_PB_TYPE = 1,
-		float_PB_TYPE,
-		double_PB_TYPE,
-		int32_PB_TYPE,
-		int64_PB_TYPE,
-		uint32_PB_TYPE,
-		uint64_PB_TYPE,
-		sint32_PB_TYPE,
-		sint64_PB_TYPE,
-		fixed32_PB_TYPE,
-		fixed64_PB_TYPE,
-		sfixed32_PB_TYPE,
-		sfixed64_PB_TYPE,
-		string_PB_TYPE,
-		bytes_PB_TYPE
+		PB_TYPE(bool) = 1,
+		PB_TYPE(float),
+		PB_TYPE(double),
+		PB_TYPE(int32),
+		PB_TYPE(int64),
+		PB_TYPE(uint32),
+		PB_TYPE(uint64),
+		PB_TYPE(sint32),
+		PB_TYPE(sint64),
+		PB_TYPE(fixed32),
+		PB_TYPE(fixed64),
+		PB_TYPE(sfixed32),
+		PB_TYPE(sfixed64),
+		PB_TYPE(string),
+		PB_TYPE(bytes)
 	};
 
 	typedef int32_t int32;
@@ -61,24 +63,24 @@ namespace pb_buildin {
 	{
 		switch (type)
 		{
-		case bool_PB_TYPE:
-		case int32_PB_TYPE:
-		case int64_PB_TYPE:
-		case uint32_PB_TYPE:
-		case uint64_PB_TYPE:
-		case sint32_PB_TYPE:
-		case sint64_PB_TYPE:
+		case PB_TYPE(bool):
+		case PB_TYPE(int32):
+		case PB_TYPE(int64):
+		case PB_TYPE(uint32):
+		case PB_TYPE(uint64):
+		case PB_TYPE(sint32):
+		case PB_TYPE(sint64):
 			return 0;
-		case fixed64_PB_TYPE:
-		case sfixed64_PB_TYPE:
-		case double_PB_TYPE:
+		case PB_TYPE(fixed64):
+		case PB_TYPE(sfixed64):
+		case PB_TYPE(double):
 			return 1;
-		case fixed32_PB_TYPE:
-		case sfixed32_PB_TYPE:
-		case float_PB_TYPE:
+		case PB_TYPE(fixed32):
+		case PB_TYPE(sfixed32):
+		case PB_TYPE(float):
 			return 5;
-		case string_PB_TYPE:
-		case bytes_PB_TYPE:
+		case PB_TYPE(string):
+		case PB_TYPE(bytes):
 			return 2;
 		}
 
