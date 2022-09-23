@@ -93,7 +93,9 @@
 #	define PB_REPEATED_ADD(_type, _var)										\
 		public: type_identity_t<_type>* add_##_var(){						\
 			PB_MEMBER_VAR(_var).emplace_back();								\
-			return &PB_MEMBER_VAR(_var).back(); }	
+			return &PB_MEMBER_VAR(_var).back(); }							\
+		public: void add_##_var(const type_identity_t<_type>& v) {			\
+			PB_MEMBER_VAR(_var).emplace_back(v); }									
 #	define PB_REPEATED_GET(_type, _var)										\
 		public: const type_identity_t<_type>& _var(int index)const{			\
 			return PB_MEMBER_VAR(_var)[index]; }							\
