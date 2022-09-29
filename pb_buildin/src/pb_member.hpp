@@ -61,7 +61,7 @@ namespace pb_buildin {
 		}
 		~pb_map() {}
 
-		value_type at_or(const key_type& k, const value_type& d = {})const {
+		const value_type& at_or(const key_type& k, const value_type& d = {})const {
 			auto itor = find(k);
 			return (itor != end() ? itor->second : d);
 		}
