@@ -136,7 +136,7 @@
 #	define PB_MAP_GET(_pair_type, _var)										\
 		public: const typename pb_map<_pair_type>::value_type& _var(		\
 			const typename pb_map<_pair_type>::key_type& key)const{			\
-			return PB_MEMBER_VAR(_var).at_or(key); }						\
+			return PB_MEMBER_VAR(_var).get(key); }							\
 		public: const pb_map<_pair_type>& _var()const {						\
 			return PB_MEMBER_VAR(_var); }
 #	define PB_MAP_MUTABLE(_pair_type, _var)									\

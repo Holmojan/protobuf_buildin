@@ -61,9 +61,15 @@ namespace pb_buildin {
 		}
 		~pb_map() {}
 
-		const value_type& at_or(const key_type& k, const value_type& d = {})const {
+		value_type at_or(const key_type& k, const value_type& d = {})const {
 			auto itor = find(k);
 			return (itor != end() ? itor->second : d);
+		}
+
+		const value_type& get(const key_type& k)const {
+			static value_type def = {};
+			auto itor = find(k);
+			return (itor != end() ? itor->second : def);
 		}
 	};
 
