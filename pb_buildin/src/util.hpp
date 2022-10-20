@@ -39,11 +39,10 @@ namespace pb_buildin {
 
 			uint32_t k = 0;
 			for (int j = 0; j < p; j++) {
-				k |= (uint8_t)plain[i + j] << 8 * j;
+				k |= (uint8_t)plain[i + j] << 8 * (2 - j);
 			}
-			for (int j = 0; j < q; j++) {
-				tmp.push_back(table[k & 0x3f]);
-				k >>= 6;
+			for (int j = 3; j >= 4 - q; j--) {
+				tmp.push_back(table[(k >> j * 6) & 0x3f]);
 			}
 		}
 
@@ -88,11 +87,10 @@ namespace pb_buildin {
 				if (b == -1) {
 					return false;
 				}
-				k |= b << 6 * j;
+				k |= b << 6 * (3 - j);
 			}
-			for (int j = 0; j < q; j++) {
-				tmp.push_back(k & 0xff);
-				k >>= 8;
+			for (int j = 2; j >= 3 - q; j--) {
+				tmp.push_back((k >> j * 8) & 0xff);
 			}
 		}
 
