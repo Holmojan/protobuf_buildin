@@ -108,6 +108,9 @@ namespace pb_buildin {
 			if (v.has()) {
 				set(v.get());
 			}
+			else {
+				clear();
+			}
 			return *this;
 		}
 
