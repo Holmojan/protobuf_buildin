@@ -134,14 +134,14 @@
 		public: size_t _var##_size()const{									\
 			return PB_MEMBER_VAR(_var).size(); }	
 #	define PB_MAP_GET(_pair_type, _var)										\
-		public: const typename pb_map<_pair_type>::value_type& _var(		\
-			const typename pb_map<_pair_type>::key_type& key)const{			\
+		public: const pb_map<_pair_type>::value_type& _var(					\
+			const pb_map<_pair_type>::key_type& key)const{					\
 			return PB_MEMBER_VAR(_var).get(key); }							\
 		public: const pb_map<_pair_type>& _var()const {						\
 			return PB_MEMBER_VAR(_var); }
 #	define PB_MAP_MUTABLE(_pair_type, _var)									\
-		public: typename pb_map<_pair_type>::value_type* mutable_##_var(	\
-			const typename pb_map<_pair_type>::key_type& key){				\
+		public: pb_map<_pair_type>::value_type* mutable_##_var(				\
+			const pb_map<_pair_type>::key_type& key){						\
 			return &PB_MEMBER_VAR(_var)[key]; }								\
 		public: pb_map<_pair_type>* mutable_##_var(){						\
 			return &PB_MEMBER_VAR(_var); }											
