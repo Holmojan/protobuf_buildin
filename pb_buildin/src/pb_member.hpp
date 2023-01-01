@@ -84,6 +84,21 @@ namespace pb_buildin {
 		~pb_repeated() {}
 	};
 
+
+	template<typename T>
+	class pb_repeated_mutable_helper {
+	public:
+		typedef T* type;
+		type operator()(T& r) { return &r; }
+	};
+
+	template<>
+	class pb_repeated_mutable_helper<bool> {
+	public:
+		typedef std::vector<bool>::reference type;
+		type operator()(std::vector<bool>::reference& r) { return r; }
+	};
+
 	template<typename T>
 	class pb_optional
 	{

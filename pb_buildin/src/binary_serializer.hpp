@@ -421,6 +421,19 @@ namespace pb_buildin {
 			ignore_unused(member);
 			return bs.read(v);
 		}
+		static bool deserialize(std::vector<bool>::reference& v, const binary_stream& bs, const member_register* member)
+		{
+			ignore_unused(member);
+
+			bool b = false;
+			if (!bs.read(b)) {
+				return false;
+			}
+
+			v = b;
+			return true;
+		}
+
 
 		template<typename T>
 		static std::enable_if_t<std::is_enum<T>::value, bool>

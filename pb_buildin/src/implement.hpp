@@ -74,6 +74,7 @@ namespace pb_buildin {
 		bool ParseFromJson(const std::string& s) {
 			Clear(); return deserialize_from_json(s, *this);
 		}
+		bool ParseFromJsonValue(const std::string& s) = delete;
 		bool ParseFromJsonValue(const Json::Value& root) {
 			Clear(); return deserialize_from_json(root, *this);
 		}

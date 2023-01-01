@@ -178,10 +178,9 @@ namespace pb_buildin {
 					return false;
 				}
 
-				Json::Value _item = Json::Value(Json::objectValue);
+				Json::Value& _item = _unknown_fields.append(Json::objectValue);
 				_item["tag"] = tag;
 				_item["data"] = b64;
-				_unknown_fields.append(_item);
 			}
 			if (!_unknown_fields.empty()) {
 				root["::_unknown_fields"].swap(_unknown_fields);
@@ -191,6 +190,15 @@ namespace pb_buildin {
 
 		//////////////////////////////////////////////////////////////////////////
 		static bool deserialize(bool& v, const Json::Value& root, const member_register* member)
+		{
+			ignore_unused(member);
+			if (!root.isConvertibleTo(Json::ValueType::booleanValue)) {
+				return false;
+			}
+			v = root.asBool();
+			return true; 
+		}
+		static bool deserialize(std::vector<bool>::reference& v, const Json::Value& root, const member_register* member)
 		{
 			ignore_unused(member);
 			if (!root.isConvertibleTo(Json::ValueType::booleanValue)) {

@@ -19,8 +19,10 @@
 		};
 
 /////////////////////////////////////////////////////////////////////////////
-#	define PB_MEMBER_NUM(_num)	PB_MEMBER_##_num
-#	define PB_MEMBER_VAR(_var)	_##_var
+#	define PB_MEMBER_NUM(_num)		PB_MEMBER_##_num
+#	define PB_MEMBER_VAR(_var)		_##_var
+#	define PB_REPEATED_MUTABLE_HELPER(_type)								\
+		pb_repeated_mutable_helper<type_identity_t<_type>>
 
 #	define PB_MEMBER_INIT(_info, _raw_type, _type, _var, _num, _flag)		\
 		{																	\
@@ -91,9 +93,10 @@
 		public: size_t _var##_size()const{									\
 			return PB_MEMBER_VAR(_var).size(); }	
 #	define PB_REPEATED_ADD(_type, _var)										\
-		public: type_identity_t<_type>* add_##_var(){						\
+		public: PB_REPEATED_MUTABLE_HELPER(_type)::type add_##_var(){		\
 			PB_MEMBER_VAR(_var).emplace_back();								\
-			return &PB_MEMBER_VAR(_var).back(); }							\
+			return PB_REPEATED_MUTABLE_HELPER(_type)()(						\
+				PB_MEMBER_VAR(_var).back()); }								\
 		public: void add_##_var(const type_identity_t<_type>& v) {			\
 			PB_MEMBER_VAR(_var).emplace_back(v); }									
 #	define PB_REPEATED_GET(_type, _var)										\
@@ -102,8 +105,10 @@
 		public: const pb_repeated<_type>& _var()const {						\
 			return PB_MEMBER_VAR(_var); }
 #	define PB_REPEATED_MUTABLE(_type, _var)									\
-		public: type_identity_t<_type>* mutable_##_var(int index){			\
-			return &PB_MEMBER_VAR(_var)[index]; }							\
+		public: PB_REPEATED_MUTABLE_HELPER(_type)::type						\
+				mutable_##_var(int index){									\
+			return PB_REPEATED_MUTABLE_HELPER(_type)()(						\
+				PB_MEMBER_VAR(_var)[index]); }								\
 		public: pb_repeated<_type>* mutable_##_var(){						\
 			return &PB_MEMBER_VAR(_var); }											
 #	define PB_REPEATED_CLEAR(_type, _var)									\
