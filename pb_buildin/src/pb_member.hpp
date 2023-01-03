@@ -63,13 +63,13 @@ namespace pb_buildin {
 
 		value_type at_or(const key_type& k, const value_type& d = {})const {
 			auto itor = find(k);
-			return (itor != end() ? itor->second : d);
+			return (itor != this->end() ? itor->second : d);
 		}
 
 		const value_type& get(const key_type& k)const {
 			static value_type def = {};
 			auto itor = find(k);
-			return (itor != end() ? itor->second : def);
+			return (itor != this->end() ? itor->second : def);
 		}
 	};
 
@@ -86,17 +86,23 @@ namespace pb_buildin {
 
 
 	template<typename T>
-	class pb_repeated_mutable_helper {
+	class pb_repeated_helper {
 	public:
-		typedef T* type;
-		type operator()(T& r) { return &r; }
+		typedef T* mutable_type;
+		static mutable_type mutable_get(T& r) { return &r; }
+
+		typedef const T& get_type;
+		static get_type get(const T& v) { return v; }
 	};
 
 	template<>
-	class pb_repeated_mutable_helper<bool> {
+	class pb_repeated_helper<bool> {
 	public:
-		typedef std::vector<bool>::reference type;
-		type operator()(std::vector<bool>::reference& r) { return r; }
+		typedef std::vector<bool>::reference mutable_type;
+		static mutable_type mutable_get(std::vector<bool>::reference r) { return r; }
+
+		typedef bool get_type;
+		static get_type get(bool v) { return v; }
 	};
 
 	template<typename T>

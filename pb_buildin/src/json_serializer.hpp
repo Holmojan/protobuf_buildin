@@ -198,7 +198,7 @@ namespace pb_buildin {
 			v = root.asBool();
 			return true; 
 		}
-		static bool deserialize(std::vector<bool>::reference& v, const Json::Value& root, const member_register* member)
+		static bool deserialize(std::vector<bool>::reference v, const Json::Value& root, const member_register* member)
 		{
 			ignore_unused(member);
 			if (!root.isConvertibleTo(Json::ValueType::booleanValue)) {

@@ -421,7 +421,7 @@ namespace pb_buildin {
 			ignore_unused(member);
 			return bs.read(v);
 		}
-		static bool deserialize(std::vector<bool>::reference& v, const binary_stream& bs, const member_register* member)
+		static bool deserialize(std::vector<bool>::reference v, const binary_stream& bs, const member_register* member)
 		{
 			ignore_unused(member);
 
@@ -564,7 +564,7 @@ namespace pb_buildin {
 
 				while (bs.pos() < l)
 				{
-					v.emplace_back();
+					v.push_back(T());
 					if (!deserialize(v.back(), bs, member)) {
 						return false;
 					}
@@ -574,7 +574,7 @@ namespace pb_buildin {
 			}
 			else
 			{
-				v.emplace_back();
+				v.push_back(T());
 				if (!deserialize(v.back(), bs, member)) {
 					return false;
 				}
