@@ -13,7 +13,15 @@
 				static class_register _register;							\
 				static _name instance(&_register);							\
 				return ((pb_message&)instance).GetDescriptor();}			\
-			_name() : pb_message(GetDescriptor()) { }
+			_name() : pb_message(GetDescriptor()) { }						\
+			_name(const _name& v) : pb_message(GetDescriptor()) {			\
+				*this = v; }												\
+			_name(_name&& v) : pb_message(GetDescriptor()) {				\
+				*this = std::move(v); }										\
+			_name& operator=(const _name& v) = default;						\
+			_name& operator=(_name&& v) {									\
+				pb_message::Swap(v); return *this; }
+
 
 #	define PB_MESSAGE_END													\
 		};

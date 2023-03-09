@@ -10,6 +10,7 @@ namespace pb_buildin {
 	{
 	public:
 		virtual void clear(void* data) = 0;
+		virtual void swap(void* data, void* data2) = 0;
 #if defined(PB_BUILDIN__USE_BINARY_SERIALIZER)
 		virtual bool serialize(const void* data, binary_serializer::helper& helper, const member_register* info) = 0;
 		virtual bool deserialize(void* data, const binary_serializer::helper& helper, const member_register* info) = 0;

@@ -53,6 +53,12 @@ namespace pb_buildin {
 			info.ptr_interface->clear((uint8_t*)base_ptr + info.offset);
 		}
 
+		void swap(void* base_ptr, void* base_ptr2)const {
+			info.ptr_interface->swap(
+				(uint8_t*)base_ptr + info.offset,
+				(uint8_t*)base_ptr2 + info.offset);
+		}
+
 		template<typename U>
 		bool serialize(const void* base_ptr, U& u)const {
 			return info.ptr_interface->serialize((uint8_t*)base_ptr + info.offset, u, this);

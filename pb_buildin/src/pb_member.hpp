@@ -37,6 +37,15 @@ namespace pb_buildin {
 			_unknown_fields.clear();
 		}
 
+		void Swap(pb_message_base& v)
+		{
+			auto table = GetDescriptor()->get_member_table();
+			for (auto& item : table) {
+				item->swap(this, &v);
+			}
+			_unknown_fields.swap(v._unknown_fields);
+		}
+
 
 		pb_message_base(const class_register* p) :
 			_instance_register(nullptr), _register(p) {}
@@ -155,6 +164,9 @@ namespace pb_buildin {
 		}
 		void clear() {
 			_ptr.reset();
+		}
+		void swap(pb_optional& v) {
+			_ptr.swap(v._ptr);
 		}
 	};
 
