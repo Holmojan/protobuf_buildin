@@ -93,7 +93,7 @@ namespace pb_buildin {
 				if (pos() + l > size()) {
 					return false;
 				}
-				s.append((char*)data() + pos(), (char*)data() + pos() + l);
+				s.assign((char*)data() + pos(), (char*)data() + pos() + l);
 				set_pos(pos() + l);
 				return true;
 			}
@@ -547,8 +547,7 @@ namespace pb_buildin {
 		static bool deserialize(std::string& v, const binary_stream& bs, const member_register* member)
 		{
 			ignore_unused(member);
-			bs.read_string(v);
-			return true;
+			return bs.read_string(v);
 		}
 
 		template<typename T>
@@ -691,8 +690,7 @@ namespace pb_buildin {
 		}
 
 		bs.set_pos(0);
-		bs.read_string(buff);
-		return true;
+		return bs.read_string(buff);
 	}
 	
 	static bool	deserialize_from_binary(const std::string& buff, pb_message_base& pb)

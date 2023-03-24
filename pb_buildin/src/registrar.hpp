@@ -30,7 +30,8 @@ namespace pb_buildin {
 		}
 
 		std::string get_name()const {
-			return pb_buildin::make_lower(info.name);
+			//return pb_buildin::make_lower(info.name);
+			return info.name;
 		}
 
 		proto_type get_type()const {
