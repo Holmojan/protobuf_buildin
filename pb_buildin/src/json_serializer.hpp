@@ -445,7 +445,7 @@ namespace pb_buildin {
 	static bool	serialize_to_json(const pb_message_base& pb, Json::Value& root) {
 		return json_serializer::serialize(pb, root, nullptr);
 	}
-	static bool	serialize_to_json(const pb_message_base& pb, std::string& json, bool multiline = true)
+	static bool	serialize_to_json(const pb_message_base& pb, std::string& json, bool multiline = false)
 	{
 		Json::Value root;
 		if (!serialize_to_json(pb, root)) {

@@ -70,7 +70,7 @@ namespace pb_buildin {
 #endif
 #if defined(PB_BUILDIN__USE_JSON_SERIALIZER)
 	public:
-		std::string SerializeAsJson(bool multiline = true)const {
+		std::string SerializeAsJson(bool multiline = false)const {
 			std::string s; serialize_to_json(*this, s, multiline); return s;
 		}
 		Json::Value SerializeAsJsonValue()const {

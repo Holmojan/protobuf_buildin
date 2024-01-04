@@ -19,34 +19,44 @@ namespace pb_buildin {
 			[](char c) {return (char)::tolower(c); });
 		return name;
 	}
+	inline std::string make_upper(std::string name) {
+		std::transform(name.begin(), name.end(), name.begin(),
+			[](char c) {return (char)::toupper(c); });
+		return name;
+	}
 
-	inline bool en_base64(const std::string& plain, std::string& cipher)
+	inline std::string en_base64(const void* data, size_t len)
 	{
+		std::string cipher;
+
 		static char table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-		if (plain.empty()) {
-			cipher.clear();
-			return true;
+		if (len == 0) {
+			return cipher;
 		}
 
-		std::string tmp;
-		tmp.reserve((plain.size() + 2) / 3 * 4);
+		cipher.reserve((len + 2) / 3 * 4);
 
-		for (size_t i = 0; i < plain.size(); i += 3)
+		for (size_t i = 0; i < len; i += 3)
 		{
-			int p = (std::min)(plain.size() - i, (size_t)3);
+			int p = (std::min)(len - i, (size_t)3);
 			int q = (p * 8 + 5) / 6;
 
 			uint32_t k = 0;
 			for (int j = 0; j < p; j++) {
-				k |= (uint8_t)plain[i + j] << 8 * (2 - j);
+				k |= ((uint8_t*)data)[i + j] << 8 * (2 - j);
 			}
 			for (int j = 3; j >= 4 - q; j--) {
-				tmp.push_back(table[(k >> j * 6) & 0x3f]);
+				cipher.push_back(table[(k >> j * 6) & 0x3f]);
 			}
 		}
 
-		cipher = std::move(tmp);
+		return cipher;
+	}
+
+	inline bool en_base64(const std::string& plain, std::string& cipher)
+	{
+		cipher = en_base64(plain.data(), plain.size());
 		return true;
 	}
 
@@ -55,13 +65,17 @@ namespace pb_buildin {
 		static char table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 		static int inv_table[256] = { 0 };
 
+		size_t cipher_size = cipher.size();
+		while (cipher_size && cipher[cipher_size - 1] == '=') {
+			cipher_size--;
+		}
 
-		if (cipher.empty()) {
+		if (!cipher_size) {
 			plain.clear();
 			return true;
 		}
 
-		if (cipher.size() % 4 == 1) {
+		if (cipher_size % 4 == 1) {
 			return false;
 		}
 
@@ -73,11 +87,11 @@ namespace pb_buildin {
 		}
 
 		std::string tmp;
-		tmp.reserve((cipher.size() + 3) / 4 * 3);
+		tmp.reserve((cipher_size + 3) / 4 * 3);
 
-		for (size_t i = 0; i < cipher.size(); i += 4)
+		for (size_t i = 0; i < cipher_size; i += 4)
 		{
-			int p = (std::min)(cipher.size() - i, (size_t)4);
+			int p = (std::min)(cipher_size - i, (size_t)4);
 			int q = p * 6 / 8;
 
 			uint32_t k = 0;
