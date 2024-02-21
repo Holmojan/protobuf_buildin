@@ -3,24 +3,28 @@
 #define __PB_BUILDIN__MACRO_HPP__
 
 
-#	define PB_MESSAGE(_name)												\
+#	define PB_MESSAGE_DECLARE(_name, _base)									\
 		enum {PB_TYPE(_name)};												\
-		class _name : public pb_message {									\
+		class _name : public _base {										\
 		protected:															\
-			_name(class_register* p) : pb_message(p) { }					\
+			_name(class_register* p) : _base(p) { }							\
+			_name(const class_register* p) : _base(p) { }					\
 		public:																\
 			static const class_register* GetDescriptor() {					\
 				static class_register _register;							\
 				static _name instance(&_register);							\
 				return ((pb_message&)instance).GetDescriptor();}			\
-			_name() : pb_message(GetDescriptor()) { }						\
-			_name(const _name& v) : pb_message(GetDescriptor()) {			\
+			_name() : _base(GetDescriptor()) { }							\
+			_name(const _name& v) : _base(GetDescriptor()) {				\
 				*this = v; }												\
-			_name(_name&& v) : pb_message(GetDescriptor()) {				\
+			_name(_name&& v) : _base(GetDescriptor()) {						\
 				*this = std::move(v); }										\
 			_name& operator=(const _name& v) = default;						\
 			_name& operator=(_name&& v) {									\
 				pb_message::Swap(v); return *this; }
+
+#	define PB_MESSAGE(_name)				PB_MESSAGE_DECLARE(_name, pb_message)
+#	define PB_MESSAGE_EXTEND(_name, _base)	PB_MESSAGE_DECLARE(_name, _base)
 
 
 #	define PB_MESSAGE_END													\

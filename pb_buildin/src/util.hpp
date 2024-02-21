@@ -141,13 +141,30 @@ namespace pb_buildin {
 #endif
 	
 	template<typename T>
-	class type_identity {
-	public:
+	struct type_identity {
 		typedef T type;
 	};
 
 	template<typename T>
 	using type_identity_t = typename type_identity<T>::type;
+
+
+	template<typename... ARGS>
+	struct type_select;
+
+	template<typename T>
+	struct type_select<T> {
+		typedef T type;
+	};
+
+	template<typename T, typename... ARGS>
+	struct type_select<T, ARGS...> {
+		typedef typename type_select<ARGS...>::type type;
+	};
+
+	template<typename... ARGS>
+	using type_select_t = typename type_select<ARGS...>::type;
+
 }
 
 #endif
