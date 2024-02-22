@@ -19,9 +19,12 @@
 				*this = v; }												\
 			_name(_name&& v) : _base(GetDescriptor()) {						\
 				*this = std::move(v); }										\
+			template<typename T> _name(const T& v) = delete;				\
 			_name& operator=(const _name& v) = default;						\
 			_name& operator=(_name&& v) {									\
-				pb_message::Swap(v); return *this; }
+				pb_message::Swap(v); return *this; }						\
+			template<typename T> _name&	operator=(const T& v) = delete;		
+
 
 #	define PB_MESSAGE(_name)				PB_MESSAGE_DECLARE(_name, pb_message)
 #	define PB_MESSAGE_EXTEND(_name, _base)	PB_MESSAGE_DECLARE(_name, _base)
