@@ -23,7 +23,10 @@
 			_name& operator=(const _name& v) = default;						\
 			_name& operator=(_name&& v) {									\
 				pb_message::Swap(v); return *this; }						\
-			template<typename T> _name&	operator=(const T& v) = delete;		
+			template<typename T> _name&	operator=(const T& v) = delete;		\
+			template<uint32_t NUM> struct pb_member_num {					\
+				typedef _base base_type;									\
+				enum { value = base_type::pb_member_num<NUM>::value }; };
 
 
 #	define PB_MESSAGE(_name)				PB_MESSAGE_DECLARE(_name, pb_message)
@@ -34,7 +37,12 @@
 		};
 
 /////////////////////////////////////////////////////////////////////////////
-#	define PB_MEMBER_NUM(_num)		PB_MEMBER_##_num
+#	define PB_MEMBER_NUM(_num)												\
+		template<> struct pb_member_num<_num> {								\
+			typedef pb_member_num<0>::base_type base_type;					\
+			enum { value = base_type::pb_member_num<_num>::value + _num };	\
+			static_assert(value == _num, "field " #_num " redefinition"); };
+
 #	define PB_MEMBER_VAR(_var)		_##_var
 #	define PB_REPEATED_HELPER(_type)	\
 		pb_repeated_helper<type_identity_t<_type>>
@@ -59,7 +67,8 @@
 #if defined(_MSC_VER) && _MSC_VER <= 1800
 
 #	define PB_MEMBER(_raw_type, _type, _var, _num, _flag)					\
-		protected: enum {PB_MEMBER_NUM(_num)};								\
+		protected: 															\
+			PB_MEMBER_NUM(_num);											\
 			void init_##_var (member_info* info) { PB_MEMBER_INIT(info,		\
 				 _raw_type, _type, _var, _num, _flag) }						\
 			type_identity_t<_type> PB_MEMBER_VAR(_var) = { this,			\
@@ -70,7 +79,8 @@
 #else
 
 #	define PB_MEMBER(_raw_type, _type, _var, _num, _flag)					\
-		protected: enum {PB_MEMBER_NUM(_num)};								\
+		protected: 															\
+			PB_MEMBER_NUM(_num);											\
 			type_identity_t<_type> PB_MEMBER_VAR(_var) = { this,			\
 				[&] (member_info* info) { PB_MEMBER_INIT(info,				\
 					_raw_type, _type, _var, _num, _flag) } };				\

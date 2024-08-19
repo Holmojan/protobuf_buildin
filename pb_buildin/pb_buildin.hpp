@@ -2,14 +2,19 @@
 #if !defined(__PB_BUILDIN__PB_BUILDIN_HPP__)
 #define __PB_BUILDIN__PB_BUILDIN_HPP__
 
-#if defined(_MSC_VER) && _MSC_VER >= 1800
-
+#if defined(_MSC_VER)
+#	if _MSVC_LANG >= 201703L
+#		define PB_USE_CPP17
+#	endif
 #elif defined(__GNUC__)
 #	pragma GCC diagnostic ignored "-Winvalid-offsetof"
 
 //#	define sscanf_s				sscanf
 //#	define localtime_s(_v,_t)	localtime_r((_t),(_v))
 #	include <string.h>
+#	if __cplusplus >= 201703L
+#		define PB_USE_CPP17
+#	endif
 #else
 #	error __FILE__": unsupported ide, compile stoped!" 
 #endif
@@ -23,6 +28,10 @@
 #include <typeinfo>
 #include <functional>
 #include <type_traits>
+
+#if defined(PB_USE_CPP17)
+#include <optional>
+#endif
 
 #if defined(PB_BUILDIN__USE_JSON_SERIALIZER)
 

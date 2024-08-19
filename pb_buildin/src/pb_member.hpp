@@ -21,7 +21,7 @@ namespace pb_buildin {
 		const class_register* GetDescriptor()const {
 			return _instance_register ? _instance_register : _register;
 		}
-		void regist_member(std::function<void(member_info*)> func)
+		void RegistMember(std::function<void(member_info*)> func)
 		{
 			if (_instance_register) {
 				_instance_register->push_member_table(func);
@@ -46,6 +46,10 @@ namespace pb_buildin {
 			_unknown_fields.swap(v._unknown_fields);
 		}
 
+		template<uint32_t>
+		struct pb_member_num {
+			enum { value = 0 };
+		};
 
 		pb_message_base(const class_register* p) :
 			_instance_register(nullptr), _register(p) {}
@@ -66,18 +70,18 @@ namespace pb_buildin {
 		typedef std::map<key_type, value_type> map_type;
 
 		pb_map(pb_message_base* message, std::function<void(member_info*)> func) {
-			message->regist_member(func);
+			message->RegistMember(func);
 		}
 		~pb_map() {}
 
 		value_type at_or(const key_type& k, const value_type& d = {})const {
-			auto itor = find(k);
+			auto itor = this->find(k);
 			return (itor != this->end() ? itor->second : d);
 		}
 
 		const value_type& get(const key_type& k)const {
 			static value_type def = {};
-			auto itor = find(k);
+			auto itor = this->find(k);
 			return (itor != this->end() ? itor->second : def);
 		}
 	};
@@ -88,7 +92,7 @@ namespace pb_buildin {
 	{
 	public:
 		pb_repeated(pb_message_base* message, std::function<void(member_info*)> func) {
-			message->regist_member(func);
+			message->RegistMember(func);
 		}
 		~pb_repeated() {}
 	};
@@ -117,13 +121,38 @@ namespace pb_buildin {
 	template<typename T>
 	class pb_optional
 	{
+#if defined(PB_USE_CPP17)
 	protected:
-		std::unique_ptr<T> _ptr;
+		std::optional<T> _val;
+	public:
+		T* mutable_get() {
+			if (!_val) {
+				_val = std::make_optional<T>();
+			}
+			return &_val.value();
+		}
+		void set(const T& v) {
+			_val = std::make_optional<T>(v);
+		}
+#else
+	protected:
+		std::unique_ptr<T> _val;
+	public:
+		T* mutable_get() {
+			if (!_val) {
+				_val = std::make_unique<T>();
+			}
+			return _val.get();
+		}
+		void set(const T& v) {
+			_val = std::make_unique<T>(v);
+		}
+#endif
 	public:
 		typedef T value_type;
 
 		pb_optional(pb_message_base* message, std::function<void(member_info*)> func) {
-			message->regist_member(func);
+			message->RegistMember(func);
 		}
 		~pb_optional() {}
 
@@ -147,26 +176,17 @@ namespace pb_buildin {
 		const T& get()const
 		{
 			static T def = {};
-			return (_ptr ? *_ptr : def);
+			return (_val ? *_val : def);
 		}
-		T* mutable_get()
-		{
-			if (!_ptr) {
-				_ptr = std::make_unique<T>();
-			}
-			return _ptr.get();
-		}
-		void set(const T& v) {
-			_ptr = std::make_unique<T>(v);
-		}
+
 		bool has()const {
-			return !!_ptr;
+			return !!_val;
 		}
 		void clear() {
-			_ptr.reset();
+			_val.reset();
 		}
 		void swap(pb_optional& v) {
-			_ptr.swap(v._ptr);
+			_val.swap(v._val);
 		}
 	};
 
