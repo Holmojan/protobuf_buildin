@@ -96,10 +96,6 @@ namespace pb_buildin {
 		template<typename T>
 		static bool serialize(const pb_repeated<T>& v, Json::Value& root, const member_register* member)
 		{
-			if (v.empty()) {
-				return true;
-			}
-
 			Json::Value arr = Json::Value(Json::arrayValue);
 			for (size_t i = 0; i < v.size(); i++) {
 				if (!serialize(v[i], arr[i], member)) {
@@ -114,10 +110,6 @@ namespace pb_buildin {
 		static std::enable_if_t<std::is_integral<typename pb_map<T>::key_type>::value, bool>
 		serialize(const pb_map<T>& v, Json::Value& root, const member_register* member)
 		{
-			if (v.empty()) {
-				return true;
-			}
-
 			typedef typename pb_map<T>::pair_type pair_type;
 
 			auto table = pair_type::GetDescriptor()->get_member_table();
@@ -136,10 +128,6 @@ namespace pb_buildin {
 		static std::enable_if_t<std::is_same<typename pb_map<T>::key_type, std::string>::value, bool>
 		serialize(const pb_map<T>& v, Json::Value& root, const member_register* member)
 		{
-			if (v.empty()) {
-				return true;
-			}
-
 			typedef typename pb_map<T>::pair_type pair_type;
 
 			auto table = pair_type::GetDescriptor()->get_member_table();

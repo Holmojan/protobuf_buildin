@@ -2,27 +2,34 @@
 #if !defined(__PB_BUILDIN__MACRO_HPP__)
 #define __PB_BUILDIN__MACRO_HPP__
 
+#	if defined(PB_SEPARATE_COMPILATION)
+#		define PB_MEMBER_BODY(...)	
+#		define PB_API	
+#	else
+#		define PB_MEMBER_BODY(...)	__VA_ARGS__
+#		define PB_API				__declspec(dllexport)	
+#	endif
 
 #	define PB_MESSAGE_DECLARE(_name, _base)									\
 		enum {PB_TYPE(_name)};												\
-		class _name : public _base {										\
+		class PB_API _name : public _base {									\
 		protected:															\
-			_name(class_register* p) : _base(p) { }							\
-			_name(const class_register* p) : _base(p) { }					\
+			_name(class_register* p) PB_MEMBER_BODY(: _base(p) { });		\
+			_name(const class_register* p) PB_MEMBER_BODY(: _base(p) { });	\
 		public:																\
-			static const class_register* GetDescriptor() {					\
+			static const class_register* GetDescriptor() PB_MEMBER_BODY({	\
 				static class_register _register;							\
 				static _name instance(&_register);							\
-				return ((pb_message&)instance).GetDescriptor();}			\
-			_name() : _base(GetDescriptor()) { }							\
-			_name(const _name& v) : _base(GetDescriptor()) {				\
-				*this = v; }												\
-			_name(_name&& v) : _base(GetDescriptor()) {						\
-				*this = std::move(v); }										\
+				return ((pb_message&)instance).GetDescriptor();});			\
+			_name() PB_MEMBER_BODY(: _base(GetDescriptor()) { });			\
+			_name(const _name& v) PB_MEMBER_BODY(: _base(GetDescriptor()) {	\
+				*this = v; });												\
+			_name(_name&& v) PB_MEMBER_BODY(: _base(GetDescriptor()) {		\
+				*this = std::move(v); });									\
 			template<typename T> _name(const T& v) = delete;				\
-			_name& operator=(const _name& v) = default;						\
-			_name& operator=(_name&& v) {									\
-				pb_message::Swap(v); return *this; }						\
+			_name& operator=(const _name& v) PB_MEMBER_BODY(= default);		\
+			_name& operator=(_name&& v) PB_MEMBER_BODY({					\
+				pb_message::Swap(v); return *this; });						\
 			template<typename T> _name&	operator=(const T& v) = delete;		\
 			template<uint32_t NUM> struct pb_member_num {					\
 				typedef _base base_type;									\
@@ -69,11 +76,11 @@
 #	define PB_MEMBER(_raw_type, _type, _var, _num, _flag)					\
 		protected: 															\
 			PB_MEMBER_NUM(_num);											\
-			void init_##_var (member_info* info) { PB_MEMBER_INIT(info,		\
-				 _raw_type, _type, _var, _num, _flag) }						\
-			type_identity_t<_type> PB_MEMBER_VAR(_var) = { this,			\
-				std::bind(&std::decay_t<decltype(*this)>::init_##_var,		\
-					this, std::placeholders::_1) };							\
+			void init_##_var (member_info* info) PB_MEMBER_BODY({ 			\
+				PB_MEMBER_INIT(info, _raw_type, _type, _var, _num, _flag)});\
+			type_identity_t<_type> PB_MEMBER_VAR(_var) PB_MEMBER_BODY(= { 	\
+				this, std::bind(&std::decay_t<decltype(*this)>::init_##_var,\
+					this, std::placeholders::_1) });						\
 		public:
 
 #else
@@ -81,9 +88,9 @@
 #	define PB_MEMBER(_raw_type, _type, _var, _num, _flag)					\
 		protected: 															\
 			PB_MEMBER_NUM(_num);											\
-			type_identity_t<_type> PB_MEMBER_VAR(_var) = { this,			\
-				[&] (member_info* info) { PB_MEMBER_INIT(info,				\
-					_raw_type, _type, _var, _num, _flag) } };				\
+			type_identity_t<_type> PB_MEMBER_VAR(_var) PB_MEMBER_BODY(= { 	\
+				this, [&] (member_info* info) { PB_MEMBER_INIT(info,		\
+					_raw_type, _type, _var, _num, _flag) } });				\
 		public:
 
 #endif
@@ -91,19 +98,20 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #	define PB_OPTIONAL_HAS(_type, _var)										\
-		public: bool has_##_var()const{										\
-			return PB_MEMBER_VAR(_var).has(); }	
+		public: bool has_##_var()const PB_MEMBER_BODY({						\
+			return PB_MEMBER_VAR(_var).has(); });
 #	define PB_OPTIONAL_GET(_type, _var)										\
-		public: const type_identity_t<_type>& _var()const{					\
-			return PB_MEMBER_VAR(_var).get(); }											
+		public: const type_identity_t<_type>& _var()const PB_MEMBER_BODY({	\
+			return PB_MEMBER_VAR(_var).get(); });							
 #	define PB_OPTIONAL_SET(_type, _var)										\
-		public: void set_##_var(const type_identity_t<_type>& v) {			\
-			PB_MEMBER_VAR(_var).set(v); }												
+		public: void set_##_var(const type_identity_t<_type>& v) 			\
+			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).set(v); });				
 #	define PB_OPTIONAL_MUTABLE(_type, _var)									\
-		public: type_identity_t<_type>* mutable_##_var(){					\
-			return PB_MEMBER_VAR(_var).mutable_get(); }		
+		public: type_identity_t<_type>* mutable_##_var() PB_MEMBER_BODY({	\
+			return PB_MEMBER_VAR(_var).mutable_get(); });		
 #	define PB_OPTIONAL_CLEAR(_type, _var)									\
-		public: void clear_##_var(){ PB_MEMBER_VAR(_var).clear(); }		
+		public: void clear_##_var() PB_MEMBER_BODY({						\
+			PB_MEMBER_VAR(_var).clear(); });
 
 #	define PB_OPTIONAL(_type, _var, _num)									\
 		PB_OPTIONAL_HAS(_type, _var)										\
@@ -115,30 +123,32 @@
 
 /////////////////////////////////////////////////////////////////////////////
 #	define PB_REPEATED_SIZE(_type, _var)									\
-		public: size_t _var##_size()const{									\
-			return PB_MEMBER_VAR(_var).size(); }	
+		public: size_t _var##_size()const PB_MEMBER_BODY({					\
+			return PB_MEMBER_VAR(_var).size(); });	
 #	define PB_REPEATED_ADD(_type, _var)										\
-		public: PB_REPEATED_HELPER(_type)::mutable_type add_##_var(){		\
-			PB_MEMBER_VAR(_var).push_back(type_identity_t<_type>());		\
+		public: PB_REPEATED_HELPER(_type)::mutable_type add_##_var() 		\
+			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).push_back(					\
+				type_identity_t<_type>());									\
 			return PB_REPEATED_HELPER(_type)::mutable_get(					\
-				PB_MEMBER_VAR(_var).back()); }								\
-		public: void add_##_var(const type_identity_t<_type>& v) {			\
-			PB_MEMBER_VAR(_var).push_back(v); }									
+				PB_MEMBER_VAR(_var).back()); });							\
+		public: void add_##_var(const type_identity_t<_type>& v) 			\
+			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).push_back(v); });		
 #	define PB_REPEATED_GET(_type, _var)										\
-		public: PB_REPEATED_HELPER(_type)::get_type _var(int index)const{	\
-			return PB_REPEATED_HELPER(_type)::get(							\
-				PB_MEMBER_VAR(_var)[index]); }								\
-		public: const pb_repeated<_type>& _var()const {						\
-			return PB_MEMBER_VAR(_var); }
+		public: PB_REPEATED_HELPER(_type)::get_type _var(int index)const 	\
+			PB_MEMBER_BODY({ return PB_REPEATED_HELPER(_type)::get(			\
+				PB_MEMBER_VAR(_var)[index]); });							\
+		public: const pb_repeated<_type>& _var()const PB_MEMBER_BODY({		\
+			return PB_MEMBER_VAR(_var); });
 #	define PB_REPEATED_MUTABLE(_type, _var)									\
 		public: PB_REPEATED_HELPER(_type)::mutable_type						\
-				mutable_##_var(int index){									\
+				mutable_##_var(int index) PB_MEMBER_BODY({					\
 			return PB_REPEATED_HELPER(_type)::mutable_get(					\
-				PB_MEMBER_VAR(_var)[index]); }								\
-		public: pb_repeated<_type>* mutable_##_var(){						\
-			return &PB_MEMBER_VAR(_var); }											
+				PB_MEMBER_VAR(_var)[index]); });							\
+		public: pb_repeated<_type>* mutable_##_var() PB_MEMBER_BODY({		\
+			return &PB_MEMBER_VAR(_var); });								
 #	define PB_REPEATED_CLEAR(_type, _var)									\
-		public: void clear_##_var(){ PB_MEMBER_VAR(_var).clear(); }		
+		public: void clear_##_var() PB_MEMBER_BODY({						\
+			PB_MEMBER_VAR(_var).clear(); });		
 
 #	define PB_REPEATED(_type, _var, _num)									\
 		PB_REPEATED_SIZE(_type, _var)										\
@@ -162,22 +172,23 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #	define PB_MAP_SIZE(_pair_type, _var)									\
-		public: size_t _var##_size()const{									\
-			return PB_MEMBER_VAR(_var).size(); }	
+		public: size_t _var##_size()const PB_MEMBER_BODY({					\
+			return PB_MEMBER_VAR(_var).size(); });	
 #	define PB_MAP_GET(_pair_type, _var)										\
 		public: const pb_map<_pair_type>::value_type& _var(					\
-			const pb_map<_pair_type>::key_type& key)const{					\
-			return PB_MEMBER_VAR(_var).get(key); }							\
-		public: const pb_map<_pair_type>& _var()const {						\
-			return PB_MEMBER_VAR(_var); }
+			const pb_map<_pair_type>::key_type& key)const PB_MEMBER_BODY({	\
+			return PB_MEMBER_VAR(_var).get(key); });						\
+		public: const pb_map<_pair_type>& _var()const PB_MEMBER_BODY({		\
+			return PB_MEMBER_VAR(_var); });
 #	define PB_MAP_MUTABLE(_pair_type, _var)									\
 		public: pb_map<_pair_type>::value_type* mutable_##_var(				\
-			const pb_map<_pair_type>::key_type& key){						\
-			return &PB_MEMBER_VAR(_var)[key]; }								\
-		public: pb_map<_pair_type>* mutable_##_var(){						\
-			return &PB_MEMBER_VAR(_var); }											
+			const pb_map<_pair_type>::key_type& key) PB_MEMBER_BODY({		\
+			return &PB_MEMBER_VAR(_var)[key]; });							\
+		public: pb_map<_pair_type>* mutable_##_var() PB_MEMBER_BODY({		\
+			return &PB_MEMBER_VAR(_var); });	
 #	define PB_MAP_CLEAR(_pair_type, _var)									\
-		public: void clear_##_var(){ PB_MEMBER_VAR(_var).clear(); }		
+		public: void clear_##_var() PB_MEMBER_BODY({						\
+			PB_MEMBER_VAR(_var).clear(); });
 
 #	define PB_MAP_PAIR(_var)	_var##_PB_MAP_PAIR
 
