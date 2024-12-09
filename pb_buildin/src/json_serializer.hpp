@@ -112,7 +112,7 @@ namespace pb_buildin {
 		{
 			typedef typename pb_map<T>::pair_type pair_type;
 
-			auto table = pair_type::GetDescriptor()->get_member_table();
+			auto& table = pair_type::GetDescriptor()->get_member_table();
 
 			Json::Value map = Json::Value(Json::objectValue);
 			for (auto& p : v) {
@@ -130,7 +130,7 @@ namespace pb_buildin {
 		{
 			typedef typename pb_map<T>::pair_type pair_type;
 
-			auto table = pair_type::GetDescriptor()->get_member_table();
+			auto& table = pair_type::GetDescriptor()->get_member_table();
 
 			Json::Value map = Json::Value(Json::objectValue);
 			for (auto& p : v) {
@@ -159,7 +159,7 @@ namespace pb_buildin {
 			
 			root = Json::Value(Json::objectValue);
 
-			auto table = v.GetDescriptor()->get_member_table();
+			auto& table = v.GetDescriptor()->get_member_table();
 			for (auto& item : table)
 			{
 				if (!item->serialize(&v, root)) {
@@ -337,7 +337,7 @@ namespace pb_buildin {
 			typedef typename pb_map<T>::key_type key_type;
 			typedef typename pb_map<T>::pair_type pair_type;
 
-			auto table = pair_type::GetDescriptor()->get_member_table();
+			auto& table = pair_type::GetDescriptor()->get_member_table();
 
 			for (auto i = root.begin(); i != root.end(); i++) {
 				if (!deserialize(v[(key_type)atoll(i.name().c_str())], *i, table[1])) {
@@ -356,7 +356,7 @@ namespace pb_buildin {
 
 			typedef typename pb_map<T>::pair_type pair_type;
 
-			auto table = pair_type::GetDescriptor()->get_member_table();
+			auto& table = pair_type::GetDescriptor()->get_member_table();
 
 			for (auto i = root.begin(); i != root.end(); i++){
 				if (!deserialize(v[i.name()], *i, table[1])) {
@@ -382,12 +382,10 @@ namespace pb_buildin {
 				return false;
 			}
 
-			auto table = v.GetDescriptor()->get_member_table();
+			auto& table = v.GetDescriptor()->get_member_table();
 
 #if defined(PB_BUILDIN__USE_BINARY_SERIALIZER)
 			{
-				binary_serializer::binary_stream bs2;
-
 				for (auto& _item : root["::_unknown_fields"])
 				{
 					if (!_item.isMember("tag") || !_item["tag"].isUInt()) {
@@ -403,20 +401,15 @@ namespace pb_buildin {
 						return false;
 					}
 
-					if (!binary_serializer::serialize(tag, data, bs2)) {
-						return false;
-					}
-				}
+					size_t l = binary_serializer::bytecount(tag, data);
+					auto bs = binary_serializer::binary_stream(l);
 
-				if (bs2.size() > 0)
-				{
-					binary_serializer::binary_stream bs;
-					if (!bs.write_stream(bs2)) {
+					if (!binary_serializer::serialize(tag, data, bs)) {
 						return false;
 					}
 
 					bs.set_pos(0);
-					if (!binary_serializer::deserialize(v, bs, member)) {
+					if (!binary_serializer::deserialize(v, bs, nullptr)) {
 						return false;
 					}
 				}

@@ -68,6 +68,9 @@ namespace pb_buildin {
 		bool deserialize(void* base_ptr, const U& u)const {
 			return info.ptr_interface->deserialize((uint8_t*)base_ptr + info.offset, u, this);
 		}
+		size_t bytecount(const void* base_ptr)const {
+			return info.ptr_interface->bytecount((uint8_t*)base_ptr + info.offset, this);
+		}	
 	};
 
 	class class_register

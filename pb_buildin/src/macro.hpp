@@ -105,7 +105,9 @@
 			return PB_MEMBER_VAR(_var).get(); });							
 #	define PB_OPTIONAL_SET(_type, _var)										\
 		public: void set_##_var(const type_identity_t<_type>& v) 			\
-			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).set(v); });				
+			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).set(v); });				\
+				void set_##_var(type_identity_t<_type>&& v) 				\
+			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).set(std::move(v)); });				
 #	define PB_OPTIONAL_MUTABLE(_type, _var)									\
 		public: type_identity_t<_type>* mutable_##_var() PB_MEMBER_BODY({	\
 			return PB_MEMBER_VAR(_var).mutable_get(); });		
@@ -132,7 +134,9 @@
 			return PB_REPEATED_HELPER(_type)::mutable_get(					\
 				PB_MEMBER_VAR(_var).back()); });							\
 		public: void add_##_var(const type_identity_t<_type>& v) 			\
-			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).push_back(v); });		
+			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).push_back(v); });			\
+				void add_##_var(type_identity_t<_type>&& v) 				\
+			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).push_back(std::move(v)); });		
 #	define PB_REPEATED_GET(_type, _var)										\
 		public: PB_REPEATED_HELPER(_type)::get_type _var(int index)const 	\
 			PB_MEMBER_BODY({ return PB_REPEATED_HELPER(_type)::get(			\

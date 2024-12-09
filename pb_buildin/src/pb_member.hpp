@@ -30,7 +30,7 @@ namespace pb_buildin {
 
 		void Clear() 
 		{ 
-			auto table = GetDescriptor()->get_member_table();
+			auto& table = GetDescriptor()->get_member_table();
 			for (auto& item : table) {
 				item->clear(this);
 			}
@@ -39,7 +39,7 @@ namespace pb_buildin {
 
 		void Swap(pb_message_base& v)
 		{
-			auto table = GetDescriptor()->get_member_table();
+			auto& table = GetDescriptor()->get_member_table();
 			for (auto& item : table) {
 				item->swap(this, &v);
 			}
@@ -133,6 +133,9 @@ namespace pb_buildin {
 		}
 		void set(const T& v) {
 			_val = std::make_optional<T>(v);
+		}
+		void set(T&& v) {
+			_val = std::make_optional<T>(std::move(v));
 		}
 #else
 	protected:

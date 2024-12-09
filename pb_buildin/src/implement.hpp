@@ -29,6 +29,9 @@ namespace pb_buildin {
 		virtual bool deserialize(void* data, const binary_serializer::helper& helper, const member_register* info) {
 			return binary_serializer::deserialize(*(T*)data, helper, info);
 		}
+		virtual size_t bytecount(const void* data, const member_register* info) {
+			return binary_serializer::bytecount(*(T*)data, info);
+		}
 #endif
 #if defined(PB_BUILDIN__USE_JSON_SERIALIZER)
 		virtual bool serialize(const void* data, json_serializer::helper& helper, const member_register* info) {
@@ -55,6 +58,9 @@ namespace pb_buildin {
 		std::string SerializeAsString()const {
 			std::string s; serialize_to_binary(*this, s); return s;
 		}
+		std::unique_ptr<uint8_t[]> SerializeAsString(size_t& len)const {
+			return serialize_to_binary(*this, len);
+		}
 		bool ParseFromString(const std::string& s) {
 			Clear(); return deserialize_from_binary(s, *this);
 		}
@@ -66,6 +72,9 @@ namespace pb_buildin {
 		}
 		void MergeFrom(const pb_message& from) {
 			deserialize_from_binary(from.SerializeAsString(), *this);
+		}
+		size_t ByteCount() {
+			return bytecount_to_binary(*this);
 		}
 #endif
 #if defined(PB_BUILDIN__USE_JSON_SERIALIZER)
