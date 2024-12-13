@@ -69,8 +69,8 @@ namespace pb_buildin {
 			return info.ptr_interface->deserialize((uint8_t*)base_ptr + info.offset, u, this);
 		}
 		template<typename U = void>
-		size_t bytecount(const void* base_ptr)const {
-			return info.ptr_interface->bytecount((uint8_t*)base_ptr + info.offset, this);
+		size_t bytesize(const void* base_ptr)const {
+			return info.ptr_interface->bytesize((uint8_t*)base_ptr + info.offset, this);
 		}	
 	};
 

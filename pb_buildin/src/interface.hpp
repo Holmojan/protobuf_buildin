@@ -14,7 +14,7 @@ namespace pb_buildin {
 #if defined(PB_BUILDIN__USE_BINARY_SERIALIZER)
 		virtual bool serialize(const void* data, binary_serializer::helper& helper, const member_register* info) = 0;
 		virtual bool deserialize(void* data, const binary_serializer::helper& helper, const member_register* info) = 0;
-		virtual size_t bytecount(const void* data, const member_register* info) = 0;
+		virtual size_t bytesize(const void* data, const member_register* info) = 0;
 #endif
 #if defined(PB_BUILDIN__USE_JSON_SERIALIZER)
 		virtual bool serialize(const void* data, json_serializer::helper& helper, const member_register* info) = 0;

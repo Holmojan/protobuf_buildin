@@ -401,7 +401,7 @@ namespace pb_buildin {
 						return false;
 					}
 
-					size_t l = binary_serializer::bytecount(tag, data);
+					size_t l = binary_serializer::bytesize(tag, data);
 					auto bs = binary_serializer::binary_stream(l);
 
 					if (!binary_serializer::serialize(tag, data, bs)) {

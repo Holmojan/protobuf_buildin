@@ -198,17 +198,17 @@ namespace pb_buildin {
 			}
 
 
-			inline static size_t bytecount(const void* data, uint32_t len) {
+			inline static size_t bytesize(const void* data, uint32_t len) {
 				return len;
 			}
 
 			template<typename T>
-			inline static std::enable_if_t<std::is_pod<T>::value, size_t> bytecount(const T& v) {
+			inline static std::enable_if_t<std::is_pod<T>::value, size_t> bytesize(const T& v) {
 				return sizeof(v);
 			}
 
 			template<typename T>
-			inline static std::enable_if_t<std::is_unsigned<T>::value, size_t> bytecount_varints(T v)
+			inline static std::enable_if_t<std::is_unsigned<T>::value, size_t> bytesize_varints(T v)
 			{
 				/*
 				size_t l = 0;
@@ -234,128 +234,128 @@ namespace pb_buildin {
 				return 10;
 			}
 
-			//static size_t bytecount_stream(size_t l) {
-			//	return bytecount_varints(l)
-			//		+ bytecount(nullptr, l);
+			//static size_t bytesize_stream(size_t l) {
+			//	return bytesize_varints(l)
+			//		+ bytesize(nullptr, l);
 			//}
-			inline static size_t bytecount_string(const std::string& s) {
-				return bytecount_varints(s.size())
-					+ bytecount(s.data(), s.size());
+			inline static size_t bytesize_string(const std::string& s) {
+				return bytesize_varints(s.size())
+					+ bytesize(s.data(), s.size());
 			}
 		};
 		//////////////////////////////////////////////////////////////////////////
 
-		static size_t bytecount(const bool v, const member_register* member)
+		static size_t bytesize(const bool v, const member_register* member)
 		{
 			ignore_unused(member);
-			return binary_stream::bytecount(v);
+			return binary_stream::bytesize(v);
 		}
 
 		template<typename T>
 		static std::enable_if_t<std::is_enum<T>::value, size_t>
-			bytecount(const T v, const member_register* member)
+			bytesize(const T v, const member_register* member)
 		{
-			return binary_stream::bytecount_varints((uint32_t)v);
+			return binary_stream::bytesize_varints((uint32_t)v);
 		}
 
 
-		static size_t bytecount(const int32_t v, const member_register* member)
+		static size_t bytesize(const int32_t v, const member_register* member)
 		{
 			switch (member->get_type())
 			{
 			case PB_TYPE(int32):
 
 				if (v >= 0) {
-					return binary_stream::bytecount_varints((uint32_t)v);
+					return binary_stream::bytesize_varints((uint32_t)v);
 				}
-				return binary_stream::bytecount_varints((uint64_t)v);
+				return binary_stream::bytesize_varints((uint64_t)v);
 
 			case PB_TYPE(sint32):
 
-				return binary_stream::bytecount_varints(en_zigzag32(v));
+				return binary_stream::bytesize_varints(en_zigzag32(v));
 
 			case PB_TYPE(sfixed32):
 
-				return binary_stream::bytecount(en_zigzag32(v));
+				return binary_stream::bytesize(en_zigzag32(v));
 
 			}
 
 			return 0;
 		}
 
-		static size_t bytecount(const int64_t v, const member_register* member)
+		static size_t bytesize(const int64_t v, const member_register* member)
 		{
 			switch (member->get_type())
 			{
 			case PB_TYPE(int64):
 
-				return binary_stream::bytecount_varints((uint64_t)v);
+				return binary_stream::bytesize_varints((uint64_t)v);
 
 			case PB_TYPE(sint64):
 
-				return binary_stream::bytecount_varints(en_zigzag64(v));
+				return binary_stream::bytesize_varints(en_zigzag64(v));
 
 			case PB_TYPE(sfixed64):
 
-				return binary_stream::bytecount(en_zigzag64(v));
+				return binary_stream::bytesize(en_zigzag64(v));
 
 			}
 
 			return 0;
 		}
 
-		static size_t bytecount(const uint32_t v, const member_register* member)
+		static size_t bytesize(const uint32_t v, const member_register* member)
 		{
 			switch (member->get_type())
 			{
 			case PB_TYPE(uint32):
 
-				return binary_stream::bytecount_varints(v);
+				return binary_stream::bytesize_varints(v);
 
 			case PB_TYPE(fixed32):
 
-				return binary_stream::bytecount(v);
+				return binary_stream::bytesize(v);
 
 			}
 
 			return 0;
 		}
-		static size_t bytecount(const uint64_t v, const member_register* member)
+		static size_t bytesize(const uint64_t v, const member_register* member)
 		{
 			switch (member->get_type())
 			{
 			case PB_TYPE(uint64):
 
-				return binary_stream::bytecount_varints(v);
+				return binary_stream::bytesize_varints(v);
 
 			case PB_TYPE(fixed64):
 
-				return binary_stream::bytecount(v);
+				return binary_stream::bytesize(v);
 
 			}
 
 			return 0;
 		}
 
-		static size_t bytecount(const float v, const member_register* member)
+		static size_t bytesize(const float v, const member_register* member)
 		{
 			ignore_unused(member);
-			return binary_stream::bytecount(v);
+			return binary_stream::bytesize(v);
 		}
-		static size_t bytecount(const double v, const member_register* member)
+		static size_t bytesize(const double v, const member_register* member)
 		{
 			ignore_unused(member);
-			return binary_stream::bytecount(v);
+			return binary_stream::bytesize(v);
 		}
 
-		static size_t bytecount(const std::string& v, const member_register* member)
+		static size_t bytesize(const std::string& v, const member_register* member)
 		{
 			ignore_unused(member);
-			return binary_stream::bytecount_string(v);
+			return binary_stream::bytesize_string(v);
 		}
 
 		template<typename T>
-		static size_t bytecount(const pb_repeated<T>& v, const member_register* member)
+		static size_t bytesize(const pb_repeated<T>& v, const member_register* member)
 		{
 			if (member->get_flag() & PB_BUILDIN_FLAG_PACKED)
 			{
@@ -364,26 +364,26 @@ namespace pb_buildin {
 				}
 
 				size_t l = 0;
-				l += binary_stream::bytecount_varints(member->get_tag());
+				l += binary_stream::bytesize_varints(member->get_tag());
 
 				size_t l2 = 0;
 				for (size_t i = 0; i < v.size(); i++) {
-					l2 += bytecount(v[i], member);
+					l2 += bytesize(v[i], member);
 				}
 
-				//l += binary_stream::bytecount_stream(l2);
-				l += binary_stream::bytecount_varints(l2) + l2;
+				//l += binary_stream::bytesize_stream(l2);
+				l += binary_stream::bytesize_varints(l2) + l2;
 				return l;
 			}
 			else
 			{
 				size_t l = 0;
-				l += v.size() * binary_stream::bytecount_varints(member->get_tag());
+				l += v.size() * binary_stream::bytesize_varints(member->get_tag());
 
 				for (size_t i = 0; i < v.size(); i++) {
 
-					//l += binary_stream::bytecount_varints(member->get_tag());
-					l += bytecount(v[i], member);
+					//l += binary_stream::bytesize_varints(member->get_tag());
+					l += bytesize(v[i], member);
 				}
 				return l;
 			}
@@ -391,7 +391,7 @@ namespace pb_buildin {
 
 		template<typename T>
 		static std::enable_if_t<std::is_base_of<pb_message_base, T>::value, size_t>
-			bytecount(const pb_map<T>& v, const member_register* member)
+			bytesize(const pb_map<T>& v, const member_register* member)
 		{
 			typedef typename pb_map<T>::key_type key_type;
 			typedef typename pb_map<T>::pair_type pair_type;
@@ -403,25 +403,25 @@ namespace pb_buildin {
 			auto& table = item.GetDescriptor()->get_member_table();
 
 			size_t l = 0;
-			l += v.size() * binary_stream::bytecount_varints(member->get_tag());
+			l += v.size() * binary_stream::bytesize_varints(member->get_tag());
 			for (auto& p : v)
 			{
-				//l += binary_stream::bytecount_varints(member->get_tag());
+				//l += binary_stream::bytesize_varints(member->get_tag());
 
 				size_t l2 = 0;
-				l2 += binary_stream::bytecount_varints(table[0]->get_tag());
-				l2 += bytecount(p.first, table[0]);
-				l2 += binary_stream::bytecount_varints(table[1]->get_tag());
-				l2 += bytecount(p.second, table[1]);
+				l2 += binary_stream::bytesize_varints(table[0]->get_tag());
+				l2 += bytesize(p.first, table[0]);
+				l2 += binary_stream::bytesize_varints(table[1]->get_tag());
+				l2 += bytesize(p.second, table[1]);
 
-				//l += binary_stream::bytecount_stream(l2);
-				l += binary_stream::bytecount_varints(l2) + l2;
+				//l += binary_stream::bytesize_stream(l2);
+				l += binary_stream::bytesize_varints(l2) + l2;
 			}
 			return l;
 		}
 
 		template<typename T>
-		static size_t bytecount(const pb_optional<T>& v, const member_register* member)
+		static size_t bytesize(const pb_optional<T>& v, const member_register* member)
 		{
 			if (!v.has()) {
 				return 0;
@@ -431,27 +431,27 @@ namespace pb_buildin {
 
 			if (!(member->get_flag() & PB_BUILDIN_FLAG_REPEATED))
 			{
-				l += binary_stream::bytecount_varints(member->get_tag());
+				l += binary_stream::bytesize_varints(member->get_tag());
 			}
 
-			l += bytecount(v.get(), member);
+			l += bytesize(v.get(), member);
 			return l;
 		}
 
-		static size_t bytecount(uint32_t tag, const std::string& data)
+		static size_t bytesize(uint32_t tag, const std::string& data)
 		{
 			size_t l = 0;
-			l += binary_stream::bytecount_varints(tag);
+			l += binary_stream::bytesize_varints(tag);
 
 			switch (tag & 0x7)
 			{
 			case 1:
 			case 5:
 			case 0:
-				l += binary_stream::bytecount(data.data(), data.size());
+				l += binary_stream::bytesize(data.data(), data.size());
 				break;
 			case 2:
-				l += binary_stream::bytecount_string(data);
+				l += binary_stream::bytesize_string(data);
 				break;
 			default:
 				break;
@@ -460,7 +460,7 @@ namespace pb_buildin {
 			return l;
 		}
 
-		static size_t bytecount(const pb_message_base& v, const member_register* member)
+		static size_t bytesize(const pb_message_base& v, const member_register* member)
 		{
 			//ignore_unused(member);
 
@@ -468,16 +468,16 @@ namespace pb_buildin {
 
 			auto& table = v.GetDescriptor()->get_member_table();
 			for (auto& item : table) {
-				l += item->bytecount(&v);
+				l += item->bytesize(&v);
 			}
 
 			for (auto& item : v.GetUnknownFields()) {
-				l += bytecount(item.first, item.second);
+				l += bytesize(item.first, item.second);
 			}
 
-			//return binary_stream::bytecount_stream(l);
+			//return binary_stream::bytesize_stream(l);
 			if (member) {
-				return binary_stream::bytecount_varints(l) + l;
+				return binary_stream::bytesize_varints(l) + l;
 			}
 			else {
 				return l;
@@ -609,7 +609,7 @@ namespace pb_buildin {
 
 				size_t l2 = 0;
 				for (size_t i = 0; i < v.size(); i++) {
-					l2 += bytecount(v[i], member);
+					l2 += bytesize(v[i], member);
 				}
 
 				bs.write_varints(l2);
@@ -665,10 +665,10 @@ namespace pb_buildin {
 				//	return false;
 				//}
 				size_t l2 = 0;
-				l2 += binary_stream::bytecount_varints(table[0]->get_tag());
-				l2 += bytecount(p.first, table[0]);
-				l2 += binary_stream::bytecount_varints(table[1]->get_tag());
-				l2 += bytecount(p.second, table[1]);
+				l2 += binary_stream::bytesize_varints(table[0]->get_tag());
+				l2 += bytesize(p.first, table[0]);
+				l2 += binary_stream::bytesize_varints(table[1]->get_tag());
+				l2 += bytesize(p.second, table[1]);
 				bs.write_varints(l2);
 
 				//binary_stream bs2;
@@ -762,11 +762,11 @@ namespace pb_buildin {
 				size_t l = 0;
 
 				for (auto& item : table) {
-					l += item->bytecount(&v);
+					l += item->bytesize(&v);
 				}
 
 				for (auto& item : v.GetUnknownFields()) {
-					l += bytecount(item.first, item.second);
+					l += bytesize(item.first, item.second);
 				}
 
 				bs.write_varints(l);
@@ -1062,14 +1062,14 @@ namespace pb_buildin {
 
 	}
 
-	static size_t bytecount_to_binary(const pb_message_base& pb)
+	static size_t bytesize_to_binary(const pb_message_base& pb)
 	{
-		return binary_serializer::bytecount(pb, nullptr);
+		return binary_serializer::bytesize(pb, nullptr);
 	}
 
 	static bool serialize_to_binary(const pb_message_base& pb, std::string& buff)
 	{
-		buff.resize(bytecount_to_binary(pb));
+		buff.resize(bytesize_to_binary(pb));
 
 		auto bs = binary_serializer::binary_stream(buff.data(), buff.size());
 		bool ret = binary_serializer::serialize(pb, bs, nullptr);
@@ -1080,7 +1080,7 @@ namespace pb_buildin {
 
 	static std::unique_ptr<uint8_t[]> serialize_to_binary(const pb_message_base& pb, uint32_t& len)
 	{
-		len = bytecount_to_binary(pb);
+		len = bytesize_to_binary(pb);
 
 		auto bs = binary_serializer::binary_stream(len);
 		if (!binary_serializer::serialize(pb, bs, nullptr)) {
