@@ -348,7 +348,7 @@ namespace pb_buildin {
 			return binary_stream::bytecount(v);
 		}
 
-		static size_t bytecount(const std::string v, const member_register* member)
+		static size_t bytecount(const std::string& v, const member_register* member)
 		{
 			ignore_unused(member);
 			return binary_stream::bytecount_string(v);
@@ -378,10 +378,11 @@ namespace pb_buildin {
 			else
 			{
 				size_t l = 0;
+				l += v.size() * binary_stream::bytecount_varints(member->get_tag());
 
 				for (size_t i = 0; i < v.size(); i++) {
 
-					l += binary_stream::bytecount_varints(member->get_tag());
+					//l += binary_stream::bytecount_varints(member->get_tag());
 					l += bytecount(v[i], member);
 				}
 				return l;
@@ -402,9 +403,10 @@ namespace pb_buildin {
 			auto& table = item.GetDescriptor()->get_member_table();
 
 			size_t l = 0;
+			l += v.size() * binary_stream::bytecount_varints(member->get_tag());
 			for (auto& p : v)
 			{
-				l += binary_stream::bytecount_varints(member->get_tag());
+				//l += binary_stream::bytecount_varints(member->get_tag());
 
 				size_t l2 = 0;
 				l2 += binary_stream::bytecount_varints(table[0]->get_tag());
@@ -586,7 +588,7 @@ namespace pb_buildin {
 			return bs.write(v);
 		}
 
-		static bool serialize(const std::string v, binary_stream& bs, const member_register* member)
+		static bool serialize(const std::string& v, binary_stream& bs, const member_register* member)
 		{
 			ignore_unused(member);
 			return bs.write_string(v);
@@ -1070,11 +1072,10 @@ namespace pb_buildin {
 		buff.resize(bytecount_to_binary(pb));
 
 		auto bs = binary_serializer::binary_stream(buff.data(), buff.size());
-		if (!binary_serializer::serialize(pb, bs, nullptr)) {
-			return false;
-		}
+		bool ret = binary_serializer::serialize(pb, bs, nullptr);
 
-		return !!bs.release().release();
+		bs.release().release();
+		return ret;
 	}
 
 	static std::unique_ptr<uint8_t[]> serialize_to_binary(const pb_message_base& pb, uint32_t& len)
@@ -1083,7 +1084,7 @@ namespace pb_buildin {
 
 		auto bs = binary_serializer::binary_stream(len);
 		if (!binary_serializer::serialize(pb, bs, nullptr)) {
-			return false;
+			return nullptr;
 		}
 
 		return bs.release();
@@ -1092,23 +1093,21 @@ namespace pb_buildin {
 	static bool	deserialize_from_binary(const std::string& buff, pb_message_base& pb)
 	{
 		auto bs = binary_serializer::binary_stream(buff.data(), buff.size());
-		
-		if (!binary_serializer::deserialize(pb, bs, nullptr)) {
-			return false;
-		}
 
-		return !!bs.release().release();
+		bool ret = binary_serializer::deserialize(pb, bs, nullptr);
+
+		bs.release().release();
+		return ret;
 	}
 
 	static bool deserialize_from_binary(const void* data, uint32_t len, pb_message_base& pb)
 	{
 		auto bs = binary_serializer::binary_stream(data, len);
 
-		if (!binary_serializer::deserialize(pb, bs, nullptr)) {
-			return false;
-		}
+		bool ret = binary_serializer::deserialize(pb, bs, nullptr);
 
-		return !!bs.release().release();
+		bs.release().release();
+		return ret;
 	}
 
 }
