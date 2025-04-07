@@ -11,6 +11,7 @@ namespace pb_buildin {
 		class_register* _instance_register = nullptr;
 		const class_register* _register = nullptr;
 		//bool _resist_instance = false;
+
 	public:
 		const std::vector<std::pair<uint32_t, std::string>>& GetUnknownFields()const {
 			return _unknown_fields;
@@ -21,7 +22,7 @@ namespace pb_buildin {
 		const class_register* GetDescriptor()const {
 			return _instance_register ? _instance_register : _register;
 		}
-		void RegistMember(std::function<void(member_info*)> func)
+		void RegistMember(const std::function<void(member_info*)>& func)
 		{
 			if (_instance_register) {
 				_instance_register->push_member_table(func);
@@ -56,6 +57,18 @@ namespace pb_buildin {
 
 		pb_message_base(class_register* p) :
 			_instance_register(p), _register(nullptr) {}
+
+#if defined(PB_BUILDIN__USE_BINARY_SERIALIZER)
+	protected:
+		mutable size_t _serialized_bytesize = PB_BUILDIN_BYTESIZE_EMPTY;
+	public:
+		void SetSerializedByteSize(size_t len)const {
+			_serialized_bytesize = len;
+		}
+		size_t GetSerializedByteSize()const {
+			return _serialized_bytesize;
+		}
+#endif
 	};
 
 
@@ -69,7 +82,7 @@ namespace pb_buildin {
 		typedef typename P::value_type value_type;
 		typedef std::map<key_type, value_type> map_type;
 
-		pb_map(pb_message_base* message, std::function<void(member_info*)> func) {
+		pb_map(pb_message_base* message, const std::function<void(member_info*)>& func) {
 			message->RegistMember(func);
 		}
 		~pb_map() {}
@@ -91,7 +104,7 @@ namespace pb_buildin {
 		public std::vector<T>
 	{
 	public:
-		pb_repeated(pb_message_base* message, std::function<void(member_info*)> func) {
+		pb_repeated(pb_message_base* message, const std::function<void(member_info*)>& func) {
 			message->RegistMember(func);
 		}
 		~pb_repeated() {}
@@ -154,7 +167,7 @@ namespace pb_buildin {
 	public:
 		typedef T value_type;
 
-		pb_optional(pb_message_base* message, std::function<void(member_info*)> func) {
+		pb_optional(pb_message_base* message, const std::function<void(member_info*)>& func) {
 			message->RegistMember(func);
 		}
 		~pb_optional() {}

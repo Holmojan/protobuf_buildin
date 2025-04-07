@@ -9,31 +9,45 @@ namespace pb_buildin {
 
 	namespace binary_serializer
 	{
+		template<bool CHECK>
 		class binary_stream
 		{
 		protected:
 			std::unique_ptr<uint8_t[]> _data;
-			uint32_t _capacity;
-			uint32_t _size;
-			mutable uint32_t _pos;
+			uint8_t* _end;
+			mutable uint8_t* _cursor;
 
 			binary_stream(const binary_stream&) = delete;
 			binary_stream& operator=(const binary_stream&) = delete;
 		public:
-			binary_stream(uint32_t capacity) :
-				_capacity(capacity), _size(0), _pos(0),
-				_data(std::make_unique<uint8_t[]>(capacity))
-			{
+
+			binary_stream(size_t size) {
+				_data = std::make_unique<uint8_t[]>(size);
+				_end = _data.get() + size;
+				_cursor = _data.get();
 			}
-			binary_stream(const void* ptr, uint32_t len):
-				_capacity(len), _size(len), _pos(0),
-				_data(std::unique_ptr<uint8_t[]>((uint8_t*)ptr))
-			{
+			binary_stream(void* ptr, size_t len) {
+				_data = std::unique_ptr<uint8_t[]>(static_cast<uint8_t*>(ptr));
+				_end = _data.get() + len;
+				_cursor = _data.get();
+			}
+
+			binary_stream(binary_stream&& bs) {
+				_data = std::unique_ptr<uint8_t[]>(nullptr);
+				_end = nullptr;
+				_cursor = nullptr;
+				(*this) = std::move(bs);
+			}
+			binary_stream& operator=(binary_stream&& bs) {
+				_data.swap(bs._data);
+				std::swap(_end, bs._end);
+				std::swap(_cursor, bs._cursor);
 			}
 
 			std::unique_ptr<uint8_t[]> release() {
-				_capacity = _size = _pos = 0;
 				auto p = std::move(_data);
+				_end = nullptr;
+				_cursor = nullptr;
 				return p;
 			}
 
@@ -43,35 +57,31 @@ namespace pb_buildin {
 			inline uint8_t* data() {
 				return _data.get();
 			}
-
-			inline uint32_t capacity() const {
-				return _capacity;
+		
+			inline size_t size() const {
+				return _end - _data.get();
 			}
 
-			inline uint32_t size() const {
-				return _size;
+			inline size_t pos() const {
+				return _cursor - _data.get();
 			}
 
-			inline uint32_t pos() const {
-				return _pos;
-			}
-
-			inline bool set_pos(uint32_t pos) const
+			inline bool set_pos(size_t pos) const
 			{
-				if (pos >= size()) {
+				if (_data.get() + pos > _end) {
 					return false;
 				}
-				_pos = pos;
+				_cursor = _data.get() + pos;
 				return true;
 			}
 
-			bool read(void* ptr, uint32_t len) const
+			bool read(void* ptr, size_t len) const
 			{
-				if (pos() + len > size()) {
+				if (CHECK && _cursor + len > _end) {
 					return false;
 				}
-				memcpy(ptr, data() + pos(), len);
-				_pos += len;
+				memcpy(ptr, _cursor, len);
+				_cursor += len;
 				return true;
 			}
 
@@ -83,74 +93,59 @@ namespace pb_buildin {
 			template<typename T>
 			std::enable_if_t<std::is_unsigned<T>::value, bool> read_varints(T& v)const
 			{
-				//enum {
-				//	bit = sizeof(v) * 8,
-				//	mask = ~((1 << (bit % 7)) - 1)
-				//};
-
-
 				v = 0;
 
-				for (int i = 0; i < 64/*bit*/; i += 7)
+				for (size_t i = 0; i < 64/*bit*/; i += 7)
 				{
 					uint8_t t = 0;
 					if (!read(t)) {
 						return false;
 					}
 
-					//uint8_t w = (t & 0x7f);
-
-					//if ((i + 7) > bit && (w & mask)) {
-					//	return false;
-					//}
-
-					v |= (uint64_t)(t & 0x7f) << i;// in c++, i auto mod bit, may get wrong value
+					v |= (T)(t & 0x7f) << i;// in c++, i auto mod bit, may get wrong value
 
 					if (!(t & 0x80)) {
-						break;
+						return true;
 					}
 				}
 
-				return true;
+				return false;
 			}
 
 			bool read_string(std::string& s)const
 			{
-				uint32_t l = 0;
+				size_t l = 0;
 				if (!read_varints(l)) {
 					return false;
 				}
-				if (pos() + l > size()) {
+				if (CHECK && _cursor + l > _end) {
 					return false;
 				}
-				s.assign((char*)data() + pos(), l);
-				_pos += l;
+				s.assign(reinterpret_cast<const char*>(_cursor), l);
+				_cursor += l;
 				return true;
 			}
 
 			bool read_varints_raw(std::string& s)const
 			{
-				uint32_t p = pos();
+				auto c = _cursor;
 
 				uint64_t v = 0;
 				if (!read_varints(v)) {
 					return false;
 				}
 
-				s.assign((char*)data() + p, pos() - p);
+				s.assign(reinterpret_cast<const char*>(c), _cursor - c);
 				return true;
 			}
 
-			bool write(const void* ptr, uint32_t len)
+			bool write(const void* ptr, size_t len)
 			{
-				if (pos() + len > size()) {
-					if (pos() + len > capacity()) {
-						return false;
-					}
-					_size = pos() + len;
+				if (CHECK && _cursor + len > _end) {
+					return false;
 				}
-				memcpy(data() + pos(), ptr, len);
-				_pos += len;
+				memcpy(_cursor, ptr, len);
+				_cursor += len;
 				return true;
 			}
 
@@ -198,7 +193,7 @@ namespace pb_buildin {
 			}
 
 
-			inline static size_t bytesize(const void* data, uint32_t len) {
+			inline static size_t bytesize(const void* data, size_t len) {
 				return len;
 			}
 
@@ -207,6 +202,11 @@ namespace pb_buildin {
 				return sizeof(v);
 			}
 
+			enum {
+				bytesize_varints_min = 1,
+				bytesize_varints_max = 10
+			};
+#if 0
 			template<typename T>
 			inline static std::enable_if_t<std::is_unsigned<T>::value, size_t> bytesize_varints(T v)
 			{
@@ -233,7 +233,22 @@ namespace pb_buildin {
 				if (v < (1ull << 7 * 9)) return 9;
 				return 10;
 			}
-
+#else
+			template<typename T>
+			inline static std::enable_if_t<std::is_unsigned<T>::value && (sizeof(T) <= 4), size_t> bytesize_varints(T v)
+			{
+				uint32_t n = log2_floor_nonzero(1 | (uint32_t)v);
+				return (n * 9 + 73) / 64;
+			}
+			
+			template<typename T>
+			inline static std::enable_if_t<std::is_unsigned<T>::value && (sizeof(T) > 4), size_t> bytesize_varints(T v)
+			{
+				uint32_t h = v >> 32;
+				uint32_t n = h ? log2_floor_nonzero(h) + 32 : log2_floor_nonzero(1 | (uint32_t)v);
+				return (n * 9 + 73) / 64;
+			}
+#endif
 			//static size_t bytesize_stream(size_t l) {
 			//	return bytesize_varints(l)
 			//		+ bytesize(nullptr, l);
@@ -243,119 +258,123 @@ namespace pb_buildin {
 					+ bytesize(s.data(), s.size());
 			}
 		};
+
+		typedef binary_stream<true> read_stream;
+		typedef binary_stream<false> write_stream;
 		//////////////////////////////////////////////////////////////////////////
 
-		static size_t bytesize(const bool v, const member_register* member)
+		static size_t bytesize(const bool v, uint32_t flags, const member_register* member)
 		{
 			ignore_unused(member);
-			return binary_stream::bytesize(v);
+			return write_stream::bytesize(v);
 		}
 
 		template<typename T>
 		static std::enable_if_t<std::is_enum<T>::value, size_t>
-			bytesize(const T v, const member_register* member)
+			bytesize(const T v, uint32_t flags, const member_register* member)
 		{
-			return binary_stream::bytesize_varints((uint32_t)v);
+			return write_stream::bytesize_varints((uint32_t)v);
 		}
 
 
-		static size_t bytesize(const int32_t v, const member_register* member)
+		static size_t bytesize(const int32_t v, uint32_t flags, const member_register* member)
 		{
 			switch (member->get_type())
 			{
 			case PB_TYPE(int32):
 
 				if (v >= 0) {
-					return binary_stream::bytesize_varints((uint32_t)v);
+					return write_stream::bytesize_varints((uint32_t)v);
 				}
-				return binary_stream::bytesize_varints((uint64_t)v);
+				//return write_stream::bytesize_varints((uint64_t)v);
+				return write_stream::bytesize_varints_max;
 
 			case PB_TYPE(sint32):
 
-				return binary_stream::bytesize_varints(en_zigzag32(v));
+				return write_stream::bytesize_varints(en_zigzag32(v));
 
 			case PB_TYPE(sfixed32):
 
-				return binary_stream::bytesize(en_zigzag32(v));
+				return write_stream::bytesize((decltype(en_zigzag32(v)))0);
 
 			}
 
 			return 0;
 		}
 
-		static size_t bytesize(const int64_t v, const member_register* member)
+		static size_t bytesize(const int64_t v, uint32_t flags, const member_register* member)
 		{
 			switch (member->get_type())
 			{
 			case PB_TYPE(int64):
 
-				return binary_stream::bytesize_varints((uint64_t)v);
+				return write_stream::bytesize_varints((uint64_t)v);
 
 			case PB_TYPE(sint64):
 
-				return binary_stream::bytesize_varints(en_zigzag64(v));
+				return write_stream::bytesize_varints(en_zigzag64(v));
 
 			case PB_TYPE(sfixed64):
 
-				return binary_stream::bytesize(en_zigzag64(v));
+				return write_stream::bytesize((decltype(en_zigzag64(v)))0);
 
 			}
 
 			return 0;
 		}
 
-		static size_t bytesize(const uint32_t v, const member_register* member)
+		static size_t bytesize(const uint32_t v, uint32_t flags, const member_register* member)
 		{
 			switch (member->get_type())
 			{
 			case PB_TYPE(uint32):
 
-				return binary_stream::bytesize_varints(v);
+				return write_stream::bytesize_varints(v);
 
 			case PB_TYPE(fixed32):
 
-				return binary_stream::bytesize(v);
+				return write_stream::bytesize(v);
 
 			}
 
 			return 0;
 		}
-		static size_t bytesize(const uint64_t v, const member_register* member)
+		static size_t bytesize(const uint64_t v, uint32_t flags, const member_register* member)
 		{
 			switch (member->get_type())
 			{
 			case PB_TYPE(uint64):
 
-				return binary_stream::bytesize_varints(v);
+				return write_stream::bytesize_varints(v);
 
 			case PB_TYPE(fixed64):
 
-				return binary_stream::bytesize(v);
+				return write_stream::bytesize(v);
 
 			}
 
 			return 0;
 		}
 
-		static size_t bytesize(const float v, const member_register* member)
+		static size_t bytesize(const float v, uint32_t flags, const member_register* member)
 		{
 			ignore_unused(member);
-			return binary_stream::bytesize(v);
+			return write_stream::bytesize(v);
 		}
-		static size_t bytesize(const double v, const member_register* member)
+		static size_t bytesize(const double v, uint32_t flags, const member_register* member)
 		{
 			ignore_unused(member);
-			return binary_stream::bytesize(v);
+			return write_stream::bytesize(v);
 		}
 
-		static size_t bytesize(const std::string& v, const member_register* member)
+		static size_t bytesize(const std::string& v, uint32_t flags, const member_register* member)
 		{
 			ignore_unused(member);
-			return binary_stream::bytesize_string(v);
+			return write_stream::bytesize_string(v);
 		}
 
 		template<typename T>
-		static size_t bytesize(const pb_repeated<T>& v, const member_register* member)
+		static size_t bytesize(const pb_repeated<T>& v, uint32_t flags, const member_register* member)
 		{
 			if (member->get_flag() & PB_BUILDIN_FLAG_PACKED)
 			{
@@ -364,26 +383,26 @@ namespace pb_buildin {
 				}
 
 				size_t l = 0;
-				l += binary_stream::bytesize_varints(member->get_tag());
+				l += write_stream::bytesize_varints(member->get_tag());
 
 				size_t l2 = 0;
 				for (size_t i = 0; i < v.size(); i++) {
-					l2 += bytesize(v[i], member);
+					l2 += bytesize(v[i], flags, member);
 				}
 
-				//l += binary_stream::bytesize_stream(l2);
-				l += binary_stream::bytesize_varints(l2) + l2;
+				//l += write_stream::bytesize_stream(l2);
+				l += write_stream::bytesize_varints(l2) + l2;
 				return l;
 			}
 			else
 			{
 				size_t l = 0;
-				l += v.size() * binary_stream::bytesize_varints(member->get_tag());
+				l += v.size() * write_stream::bytesize_varints(member->get_tag());
 
 				for (size_t i = 0; i < v.size(); i++) {
 
-					//l += binary_stream::bytesize_varints(member->get_tag());
-					l += bytesize(v[i], member);
+					//l += write_stream::bytesize_varints(member->get_tag());
+					l += bytesize(v[i], flags, member);
 				}
 				return l;
 			}
@@ -391,7 +410,7 @@ namespace pb_buildin {
 
 		template<typename T>
 		static std::enable_if_t<std::is_base_of<pb_message_base, T>::value, size_t>
-			bytesize(const pb_map<T>& v, const member_register* member)
+			bytesize(const pb_map<T>& v, uint32_t flags, const member_register* member)
 		{
 			typedef typename pb_map<T>::key_type key_type;
 			typedef typename pb_map<T>::pair_type pair_type;
@@ -401,27 +420,30 @@ namespace pb_buildin {
 
 			static const pair_type item;
 			auto& table = item.GetDescriptor()->get_member_table();
+			static const size_t l01 =
+				write_stream::bytesize_varints(table[0]->get_tag()) +
+				write_stream::bytesize_varints(table[1]->get_tag());
 
 			size_t l = 0;
-			l += v.size() * binary_stream::bytesize_varints(member->get_tag());
+			l += v.size() * write_stream::bytesize_varints(member->get_tag());
 			for (auto& p : v)
 			{
-				//l += binary_stream::bytesize_varints(member->get_tag());
+				//l += write_stream::bytesize_varints(member->get_tag());
 
-				size_t l2 = 0;
-				l2 += binary_stream::bytesize_varints(table[0]->get_tag());
-				l2 += bytesize(p.first, table[0]);
-				l2 += binary_stream::bytesize_varints(table[1]->get_tag());
-				l2 += bytesize(p.second, table[1]);
+				size_t l2 = l01;
+				//l2 += write_stream::bytesize_varints(table[0]->get_tag());
+				l2 += bytesize(p.first, flags, table[0]);
+				//l2 += write_stream::bytesize_varints(table[1]->get_tag());
+				l2 += bytesize(p.second, flags, table[1]);
 
-				//l += binary_stream::bytesize_stream(l2);
-				l += binary_stream::bytesize_varints(l2) + l2;
+				//l += write_stream::bytesize_stream(l2);
+				l += write_stream::bytesize_varints(l2) + l2;
 			}
 			return l;
 		}
 
 		template<typename T>
-		static size_t bytesize(const pb_optional<T>& v, const member_register* member)
+		static size_t bytesize(const pb_optional<T>& v, uint32_t flags, const member_register* member)
 		{
 			if (!v.has()) {
 				return 0;
@@ -429,29 +451,29 @@ namespace pb_buildin {
 
 			size_t l = 0;
 
-			if (!(member->get_flag() & PB_BUILDIN_FLAG_REPEATED))
-			{
-				l += binary_stream::bytesize_varints(member->get_tag());
-			}
+			//if (!(member->get_flag() & PB_BUILDIN_FLAG_REPEATED))
+			//{
+			l += write_stream::bytesize_varints(member->get_tag());
+			//}
 
-			l += bytesize(v.get(), member);
+			l += bytesize(v.get(), flags, member);
 			return l;
 		}
 
-		static size_t bytesize(uint32_t tag, const std::string& data)
+		static size_t bytesize(uint32_t tag, uint32_t flags, const std::string& data)
 		{
 			size_t l = 0;
-			l += binary_stream::bytesize_varints(tag);
+			l += write_stream::bytesize_varints(tag);
 
 			switch (tag & 0x7)
 			{
 			case 1:
 			case 5:
 			case 0:
-				l += binary_stream::bytesize(data.data(), data.size());
+				l += write_stream::bytesize(data.data(), data.size());
 				break;
 			case 2:
-				l += binary_stream::bytesize_string(data);
+				l += write_stream::bytesize_string(data);
 				break;
 			default:
 				break;
@@ -460,32 +482,44 @@ namespace pb_buildin {
 			return l;
 		}
 
-		static size_t bytesize(const pb_message_base& v, const member_register* member)
+		static size_t bytesize(const pb_message_base& v, uint32_t flags, const member_register* member)
 		{
 			//ignore_unused(member);
+			size_t l = PB_BUILDIN_BYTESIZE_EMPTY;
 
-			size_t l = 0;
-
-			auto& table = v.GetDescriptor()->get_member_table();
-			for (auto& item : table) {
-				l += item->bytesize(&v);
+			if (flags & PB_BUILDIN_BYTESIZE_USE_CACHE) {
+				l = v.GetSerializedByteSize();
+				v.SetSerializedByteSize(PB_BUILDIN_BYTESIZE_EMPTY);
 			}
 
-			for (auto& item : v.GetUnknownFields()) {
-				l += bytesize(item.first, item.second);
+			if (l == PB_BUILDIN_BYTESIZE_EMPTY)
+			{
+				l = 0;
+
+				auto& table = v.GetDescriptor()->get_member_table();
+				for (auto& item : table) {
+					l += item->bytesize(&v, flags);
+				}
+
+				for (auto& item : v.GetUnknownFields()) {
+					l += bytesize(item.first, flags, item.second);
+				}
+
+				if (flags & PB_BUILDIN_BYTESIZE_USE_CACHE) {
+					v.SetSerializedByteSize(l);
+				}
 			}
 
-			//return binary_stream::bytesize_stream(l);
+			//return write_stream::bytesize_stream(l);
 			if (member) {
-				return binary_stream::bytesize_varints(l) + l;
+				l += write_stream::bytesize_varints(l);
 			}
-			else {
-				return l;
-			}
+
+			return l;
 		}
 		//////////////////////////////////////////////////////////////////////////
 
-		static bool serialize(const	bool v, binary_stream& bs, const member_register* member)
+		static bool serialize(const	bool v, write_stream& bs, const member_register* member)
 		{
 			ignore_unused(member);
 			return bs.write(v);
@@ -493,13 +527,13 @@ namespace pb_buildin {
 
 		template<typename T>
 		static std::enable_if_t<std::is_enum<T>::value, bool>
-		serialize(const T v, binary_stream& bs, const member_register* member)
+		serialize(const T v, write_stream& bs, const member_register* member)
 		{
 			return bs.write_varints((uint32_t)v);
 		}
 
 
-		static bool serialize(const int32_t v, binary_stream& bs, const member_register* member)
+		static bool serialize(const int32_t v, write_stream& bs, const member_register* member)
 		{
 			switch (member->get_type())
 			{
@@ -523,7 +557,7 @@ namespace pb_buildin {
 			return false;
 		}
 	
-		static bool serialize(const int64_t v, binary_stream& bs, const member_register* member)
+		static bool serialize(const int64_t v, write_stream& bs, const member_register* member)
 		{
 			switch (member->get_type())
 			{
@@ -544,7 +578,7 @@ namespace pb_buildin {
 			return false;
 		}
 
-		static bool serialize(const uint32_t v, binary_stream& bs, const member_register* member)
+		static bool serialize(const uint32_t v, write_stream& bs, const member_register* member)
 		{
 			switch (member->get_type())
 			{
@@ -560,7 +594,7 @@ namespace pb_buildin {
 
 			return false;
 		}
-		static bool serialize(const uint64_t v, binary_stream& bs, const member_register* member)
+		static bool serialize(const uint64_t v, write_stream& bs, const member_register* member)
 		{
 			switch (member->get_type())
 			{
@@ -577,25 +611,25 @@ namespace pb_buildin {
 			return false;
 		}
 
-		static bool serialize(const float v, binary_stream& bs, const member_register* member)
+		static bool serialize(const float v, write_stream& bs, const member_register* member)
 		{
 			ignore_unused(member);
 			return bs.write(v);
 		}
-		static bool serialize(const double v, binary_stream& bs, const member_register* member)
+		static bool serialize(const double v, write_stream& bs, const member_register* member)
 		{
 			ignore_unused(member);
 			return bs.write(v);
 		}
 
-		static bool serialize(const std::string& v, binary_stream& bs, const member_register* member)
+		static bool serialize(const std::string& v, write_stream& bs, const member_register* member)
 		{
 			ignore_unused(member);
 			return bs.write_string(v);
 		}
 
 		template<typename T>
-		static bool serialize(const pb_repeated<T>& v, binary_stream& bs, const member_register* member)
+		static bool serialize(const pb_repeated<T>& v, write_stream& bs, const member_register* member)
 		{
 			if (member->get_flag() & PB_BUILDIN_FLAG_PACKED)
 			{
@@ -609,7 +643,7 @@ namespace pb_buildin {
 
 				size_t l2 = 0;
 				for (size_t i = 0; i < v.size(); i++) {
-					l2 += bytesize(v[i], member);
+					l2 += bytesize(v[i], PB_BUILDIN_BYTESIZE_USE_CACHE, member);
 				}
 
 				bs.write_varints(l2);
@@ -635,13 +669,14 @@ namespace pb_buildin {
 						return false;
 					}
 				}
+
 				return true;
 			}
 		}
 		
 		template<typename T>
 		static std::enable_if_t<std::is_base_of<pb_message_base, T>::value, bool>
-		serialize(const pb_map<T>& v, binary_stream& bs, const member_register* member)
+		serialize(const pb_map<T>& v, write_stream& bs, const member_register* member)
 		{
 			typedef typename pb_map<T>::key_type key_type;
 			typedef typename pb_map<T>::pair_type pair_type;
@@ -651,6 +686,9 @@ namespace pb_buildin {
 
 			static const pair_type item;
 			auto& table = item.GetDescriptor()->get_member_table();
+			static const size_t l01 =
+				write_stream::bytesize_varints(table[0]->get_tag()) +
+				write_stream::bytesize_varints(table[1]->get_tag());
 
 			for (auto& p : v)
 			{
@@ -664,11 +702,11 @@ namespace pb_buildin {
 				//if (!serialize(item, bs, member)) {
 				//	return false;
 				//}
-				size_t l2 = 0;
-				l2 += binary_stream::bytesize_varints(table[0]->get_tag());
-				l2 += bytesize(p.first, table[0]);
-				l2 += binary_stream::bytesize_varints(table[1]->get_tag());
-				l2 += bytesize(p.second, table[1]);
+				size_t l2 = l01;
+				//l2 += write_stream::bytesize_varints(table[0]->get_tag());
+				l2 += bytesize(p.first, PB_BUILDIN_BYTESIZE_USE_CACHE, table[0]);
+				//l2 += write_stream::bytesize_varints(table[1]->get_tag());
+				l2 += bytesize(p.second, PB_BUILDIN_BYTESIZE_USE_CACHE, table[1]);
 				bs.write_varints(l2);
 
 				//binary_stream bs2;
@@ -692,23 +730,23 @@ namespace pb_buildin {
 		}
 
 		template<typename T>
-		static bool serialize(const pb_optional<T>& v, binary_stream& bs, const member_register* member)
+		static bool serialize(const pb_optional<T>& v, write_stream& bs, const member_register* member)
 		{
 			if (!v.has()) {
 				return true;
 			}
 
-			if (!(member->get_flag() & PB_BUILDIN_FLAG_REPEATED))
-			{
-				if (!bs.write_varints(member->get_tag())) {
-					return false;
-				}
+			//if (!(member->get_flag() & PB_BUILDIN_FLAG_REPEATED))
+			//{
+			if (!bs.write_varints(member->get_tag())) {
+				return false;
 			}
+			//}
 
 			return serialize(v.get(), bs, member);
 		}
 
-		static bool serialize(uint32_t tag, const std::string& data, binary_stream& bs)
+		static bool serialize(uint32_t tag, const std::string& data, write_stream& bs)
 		{
 			if (!bs.write_varints(tag)) {
 				return false;
@@ -751,7 +789,7 @@ namespace pb_buildin {
 			return true;
 		}
 
-		static bool serialize(const pb_message_base& v, binary_stream& bs, const member_register* member)
+		static bool serialize(const pb_message_base& v, write_stream& bs, const member_register* member)
 		{
 			//ignore_unused(member);
 			
@@ -759,15 +797,18 @@ namespace pb_buildin {
 			//binary_stream bs2;
 			if (member)
 			{
+
 				size_t l = 0;
 
-				for (auto& item : table) {
-					l += item->bytesize(&v);
-				}
+				l += bytesize(v, PB_BUILDIN_BYTESIZE_USE_CACHE, nullptr);
 
-				for (auto& item : v.GetUnknownFields()) {
-					l += bytesize(item.first, item.second);
-				}
+				//for (auto& item : table) {
+				//	l += item->bytesize(&v, PB_BUILDIN_BYTESIZE_USE_CACHE);
+				//}
+
+				//for (auto& item : v.GetUnknownFields()) {
+				//	l += bytesize(item.first, item.second);
+				//}
 
 				bs.write_varints(l);
 			}
@@ -791,12 +832,12 @@ namespace pb_buildin {
 		}
 		//////////////////////////////////////////////////////////////////////////
 
-		static bool deserialize(bool& v, const binary_stream& bs, const member_register* member)
+		static bool deserialize(bool& v, const read_stream& bs, const member_register* member)
 		{
 			ignore_unused(member);
 			return bs.read(v);
 		}
-		static bool deserialize(std::vector<bool>::reference v, const binary_stream& bs, const member_register* member)
+		static bool deserialize(std::vector<bool>::reference v, const read_stream& bs, const member_register* member)
 		{
 			ignore_unused(member);
 
@@ -812,12 +853,12 @@ namespace pb_buildin {
 
 		template<typename T>
 		static std::enable_if_t<std::is_enum<T>::value, bool>
-		deserialize(T& v, const binary_stream& bs, const member_register* member)
+		deserialize(T& v, const read_stream& bs, const member_register* member)
 		{
 			return bs.read_varints((uint32_t&)v);
 		}
 
-		static bool deserialize(int32_t& v, const binary_stream& bs, const member_register* member)
+		static bool deserialize(int32_t& v, const read_stream& bs, const member_register* member)
 		{
 			switch (member->get_type())
 			{
@@ -846,7 +887,7 @@ namespace pb_buildin {
 			return false;
 		}
 
-		static bool deserialize(int64_t& v, const binary_stream& bs, const member_register* member)
+		static bool deserialize(int64_t& v, const read_stream& bs, const member_register* member)
 		{
 			switch (member->get_type())
 			{
@@ -875,7 +916,7 @@ namespace pb_buildin {
 			return false;
 		}
 
-		static bool deserialize(uint32_t& v, const binary_stream& bs, const member_register* member)
+		static bool deserialize(uint32_t& v, const read_stream& bs, const member_register* member)
 		{
 			switch (member->get_type())
 			{
@@ -891,7 +932,7 @@ namespace pb_buildin {
 
 			return false;
 		}
-		static bool deserialize(uint64_t& v, const binary_stream& bs, const member_register* member)
+		static bool deserialize(uint64_t& v, const read_stream& bs, const member_register* member)
 		{
 			switch (member->get_type())
 			{
@@ -908,25 +949,25 @@ namespace pb_buildin {
 			return false;
 		}
 
-		static bool deserialize(float& v, const binary_stream& bs, const member_register* member)
+		static bool deserialize(float& v, const read_stream& bs, const member_register* member)
 		{
 			ignore_unused(member);
 			return bs.read(v);
 		}
-		static bool deserialize(double& v, const binary_stream& bs, const member_register* member)
+		static bool deserialize(double& v, const read_stream& bs, const member_register* member)
 		{
 			ignore_unused(member);
 			return bs.read(v);
 		}
 
-		static bool deserialize(std::string& v, const binary_stream& bs, const member_register* member)
+		static bool deserialize(std::string& v, const read_stream& bs, const member_register* member)
 		{
 			ignore_unused(member);
 			return bs.read_string(v);
 		}
 
 		template<typename T>
-		static bool deserialize(pb_repeated<T>& v, const binary_stream& bs, const member_register* member)
+		static bool deserialize(pb_repeated<T>& v, const read_stream& bs, const member_register* member)
 		{
 			if (member->get_flag() & PB_BUILDIN_FLAG_PACKED)
 			{
@@ -938,7 +979,7 @@ namespace pb_buildin {
 
 				while (bs.pos() < l)
 				{
-					v.push_back(T());
+					v.emplace_back();
 					if (!deserialize(v.back(), bs, member)) {
 						return false;
 					}
@@ -948,7 +989,7 @@ namespace pb_buildin {
 			}
 			else
 			{
-				v.push_back(T());
+				v.emplace_back();
 				if (!deserialize(v.back(), bs, member)) {
 					return false;
 				}
@@ -958,7 +999,7 @@ namespace pb_buildin {
 		
 		template<typename T>
 		static std::enable_if_t<std::is_base_of<pb_message_base, T>::value, bool>
-		deserialize(pb_map<T>& v, const binary_stream& bs, const member_register* member)
+		deserialize(pb_map<T>& v, const read_stream& bs, const member_register* member)
 		{
 			typedef typename pb_map<T>::key_type key_type;
 			typedef typename pb_map<T>::pair_type pair_type;
@@ -974,18 +1015,21 @@ namespace pb_buildin {
 			if (!item.has_key() || !item.has_value()) {
 				return false;
 			}
-
+#if defined(PB_USE_CPP17)
+			v.insert_or_assign(std::move(*item.mutable_key()), std::move(*item.mutable_value()));
+#else
 			v[std::move(*item.mutable_key())] = std::move(*item.mutable_value());
+#endif
 			return true;
 		}
 
 		template<typename T>
-		static bool deserialize(pb_optional<T>& v, const binary_stream& bs, const member_register* member)
+		static bool deserialize(pb_optional<T>& v, const read_stream& bs, const member_register* member)
 		{
 			return deserialize(*v.mutable_get(), bs, member);
 		}
 
-		static bool deserialize(pb_message_base& v, const binary_stream& bs, const member_register* member)
+		static bool deserialize(pb_message_base& v, const read_stream& bs, const member_register* member)
 		{
 			//ignore_unused(member);
 
@@ -1064,14 +1108,14 @@ namespace pb_buildin {
 
 	static size_t bytesize_to_binary(const pb_message_base& pb)
 	{
-		return binary_serializer::bytesize(pb, nullptr);
+		return binary_serializer::bytesize(pb, PB_BUILDIN_BYTESIZE_USE_CACHE, nullptr);
 	}
 
 	static bool serialize_to_binary(const pb_message_base& pb, std::string& buff)
 	{
 		buff.resize(bytesize_to_binary(pb));
 
-		auto bs = binary_serializer::binary_stream(buff.data(), buff.size());
+		auto bs = binary_serializer::write_stream(const_cast<char*>(buff.data()), buff.size());
 		bool ret = binary_serializer::serialize(pb, bs, nullptr);
 
 		bs.release().release();
@@ -1082,7 +1126,7 @@ namespace pb_buildin {
 	{
 		len = bytesize_to_binary(pb);
 
-		auto bs = binary_serializer::binary_stream(len);
+		auto bs = binary_serializer::write_stream(len);
 		if (!binary_serializer::serialize(pb, bs, nullptr)) {
 			return nullptr;
 		}
@@ -1092,7 +1136,7 @@ namespace pb_buildin {
 
 	static bool	deserialize_from_binary(const std::string& buff, pb_message_base& pb)
 	{
-		auto bs = binary_serializer::binary_stream(buff.data(), buff.size());
+		auto bs = binary_serializer::read_stream(const_cast<char*>(buff.data()), buff.size());
 
 		bool ret = binary_serializer::deserialize(pb, bs, nullptr);
 
@@ -1102,7 +1146,7 @@ namespace pb_buildin {
 
 	static bool deserialize_from_binary(const void* data, uint32_t len, pb_message_base& pb)
 	{
-		auto bs = binary_serializer::binary_stream(data, len);
+		auto bs = binary_serializer::read_stream(const_cast<void*>(data), len);
 
 		bool ret = binary_serializer::deserialize(pb, bs, nullptr);
 

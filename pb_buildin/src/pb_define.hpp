@@ -52,13 +52,13 @@ namespace pb_buildin {
 	}
 	*/
 	template<typename T>
-	std::enable_if_t<std::is_enum<T>::value, int32_t>
+	std::enable_if_t<std::is_enum<T>::value, uint32_t>
 	get_wire_type(T*, proto_type type) {
 		return 0;
 	}
 
 	template<typename T>
-	std::enable_if_t<!std::is_enum<T>::value, int32_t>
+	std::enable_if_t<!std::is_enum<T>::value, uint32_t>
 	get_wire_type(T*, proto_type type)
 	{
 		switch (type)
@@ -85,6 +85,16 @@ namespace pb_buildin {
 		}
 
 		return 2;
+	}
+
+	inline uint32_t get_tag(uint32_t num, uint32_t wire_type, uint32_t flag)
+	{
+		if (flag & PB_BUILDIN_FLAG_REPEATED) {
+			if (flag & PB_BUILDIN_FLAG_PACKED) {
+				return num << 3 | 2;
+			}
+		}
+		return num << 3 | wire_type;
 	}
 }
 #endif

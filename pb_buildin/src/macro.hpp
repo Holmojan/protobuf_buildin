@@ -65,8 +65,7 @@
 			_info->size = member_sizeof(message, PB_MEMBER_VAR(_var));		\
 			_info->wire_type = get_wire_type((_raw_type*)nullptr,			\
 				(proto_type)(PB_TYPE(_raw_type)));							\
-			/*_info->type_info = &typeid(*/									\
-				/*PB_BUILDIN_TYPE_IDENTITY(_type));*/						\
+			_info->tag = get_tag(_num, _info->wire_type, _flag);			\
 			_info->ptr_interface = serialize_implement<						\
 				type_identity_t<_type>>::get_instance();					\
 		}
@@ -129,23 +128,23 @@
 			return PB_MEMBER_VAR(_var).size(); });	
 #	define PB_REPEATED_ADD(_type, _var)										\
 		public: PB_REPEATED_HELPER(_type)::mutable_type add_##_var() 		\
-			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).push_back(					\
+			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).emplace_back(				\
 				type_identity_t<_type>());									\
 			return PB_REPEATED_HELPER(_type)::mutable_get(					\
 				PB_MEMBER_VAR(_var).back()); });							\
 		public: void add_##_var(const type_identity_t<_type>& v) 			\
-			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).push_back(v); });			\
+			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).emplace_back(v); });		\
 				void add_##_var(type_identity_t<_type>&& v) 				\
-			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).push_back(std::move(v)); });		
+			PB_MEMBER_BODY({ PB_MEMBER_VAR(_var).emplace_back(std::move(v)); });		
 #	define PB_REPEATED_GET(_type, _var)										\
-		public: PB_REPEATED_HELPER(_type)::get_type _var(int index)const 	\
+		public: PB_REPEATED_HELPER(_type)::get_type _var(size_t index)const \
 			PB_MEMBER_BODY({ return PB_REPEATED_HELPER(_type)::get(			\
 				PB_MEMBER_VAR(_var)[index]); });							\
 		public: const pb_repeated<_type>& _var()const PB_MEMBER_BODY({		\
 			return PB_MEMBER_VAR(_var); });
 #	define PB_REPEATED_MUTABLE(_type, _var)									\
 		public: PB_REPEATED_HELPER(_type)::mutable_type						\
-				mutable_##_var(int index) PB_MEMBER_BODY({					\
+				mutable_##_var(size_t index) PB_MEMBER_BODY({				\
 			return PB_REPEATED_HELPER(_type)::mutable_get(					\
 				PB_MEMBER_VAR(_var)[index]); });							\
 		public: pb_repeated<_type>* mutable_##_var() PB_MEMBER_BODY({		\
@@ -188,6 +187,9 @@
 		public: pb_map<_pair_type>::value_type* mutable_##_var(				\
 			const pb_map<_pair_type>::key_type& key) PB_MEMBER_BODY({		\
 			return &PB_MEMBER_VAR(_var)[key]; });							\
+		public: pb_map<_pair_type>::value_type* mutable_##_var(				\
+			pb_map<_pair_type>::key_type&& key) PB_MEMBER_BODY({			\
+			return &PB_MEMBER_VAR(_var)[std::move(key)]; });				\
 		public: pb_map<_pair_type>* mutable_##_var() PB_MEMBER_BODY({		\
 			return &PB_MEMBER_VAR(_var); });	
 #	define PB_MAP_CLEAR(_pair_type, _var)									\

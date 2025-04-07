@@ -4,45 +4,43 @@
 
 namespace pb_buildin {
 
-
 	template<typename T>
 	class serialize_implement :public serialize_interface {
 	protected:
-		serialize_implement(){}
+		serialize_implement() {}
 	public:
 		static serialize_implement* get_instance() {
 			static serialize_implement instance;
 			return &instance;
 		}
 		virtual void clear(void* data) {
-			(*(T*)data).clear();
+			(*static_cast<T*>(data)).clear();
 		}
 
 		virtual void swap(void* data, void* data2) {
-			(*(T*)data).swap(*(T*)data2);
+			(*static_cast<T*>(data)).swap(*static_cast<T*>(data2));
 		}
 
 #if defined(PB_BUILDIN__USE_BINARY_SERIALIZER)
-		virtual bool serialize(const void* data, binary_serializer::helper& helper, const member_register* info) {
-			return binary_serializer::serialize(*(const T*)data, helper, info);
+		virtual bool serialize(const void* data, binary_serializer::write_helper& helper, const member_register* info) {
+			return binary_serializer::serialize(*static_cast<const T*>(data), helper, info);
 		}
-		virtual bool deserialize(void* data, const binary_serializer::helper& helper, const member_register* info) {
-			return binary_serializer::deserialize(*(T*)data, helper, info);
+		virtual bool deserialize(void* data, const binary_serializer::read_helper& helper, const member_register* info) {
+			return binary_serializer::deserialize(*static_cast<T*>(data), helper, info);
 		}
-		virtual size_t bytesize(const void* data, const member_register* info) {
-			return binary_serializer::bytesize(*(T*)data, info);
+		virtual size_t bytesize(const void* data, uint32_t flags, const member_register* info) {
+			return binary_serializer::bytesize(*static_cast<const T*>(data), flags, info);
 		}
 #endif
 #if defined(PB_BUILDIN__USE_JSON_SERIALIZER)
-		virtual bool serialize(const void* data, json_serializer::helper& helper, const member_register* info) {
-			return json_serializer::serialize(*(const T*)data, helper, info);
+		virtual bool serialize(const void* data, json_serializer::write_helper& helper, const member_register* info) {
+			return json_serializer::serialize(*static_cast<const T*>(data), helper, info);
 		}
-		virtual bool deserialize(void* data, const json_serializer::helper& helper, const member_register* info) {
-			return json_serializer::deserialize(*(T*)data, helper, info);
+		virtual bool deserialize(void* data, const json_serializer::read_helper& helper, const member_register* info) {
+			return json_serializer::deserialize(*static_cast<T*>(data), helper, info);
 		}
 #endif
 	};
-
 
 	class pb_message : public pb_message_base
 	{
@@ -94,6 +92,7 @@ namespace pb_buildin {
 		}
 #endif
 	};
+
 }
 
 #endif

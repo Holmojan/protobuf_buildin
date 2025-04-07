@@ -44,7 +44,7 @@ namespace pb_buildin {
 
 			uint32_t k = 0;
 			for (int j = 0; j < p; j++) {
-				k |= ((uint8_t*)data)[i + j] << 8 * (2 - j);
+				k |= (static_cast<const uint8_t*>(data))[i + j] << 8 * (2 - j);
 			}
 			for (int j = 3; j >= 4 - q; j--) {
 				cipher.push_back(table[(k >> j * 6) & 0x3f]);
@@ -130,6 +130,26 @@ namespace pb_buildin {
 
 	template<typename T>
 	inline void ignore_unused(const T&) {}
+
+
+	inline uint32_t log2_floor_nonzero(uint32_t n) {
+#if defined(__GNUC__)
+		return 31 ^ static_cast<uint32_t>(__builtin_clz(n));
+#elif defined(_MSC_VER)
+		unsigned long where;
+		_BitScanReverse(&where, n);
+		return where;
+#else
+		uint32_t l = 0;
+		if (n >> 16) { l += 16; n >>= 16; }
+		if (n >> 8) { l += 8; n >>= 8; }
+		if (n >> 4) { l += 4; n >>= 4; }
+		if (n >> 2) { l += 2; n >>= 2; }
+		if (n >> 1) { l += 1; n >>= 1; }
+		assert(n == 1);
+		return l;
+#endif
+	}
 
 
 #if !defined(member_offsetof)

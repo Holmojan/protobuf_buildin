@@ -149,8 +149,8 @@ namespace pb_buildin {
 				return true;
 			}
 
-			const std::string name = member->get_name();
-			return serialize(v.get(), root[name], member);
+			//const std::string name = member->get_name();
+			return serialize(v.get(), root[member->get_name()], member);
 		}
 
 		static bool	serialize(const pb_message_base& v, Json::Value& root, const member_register* member)
@@ -401,15 +401,16 @@ namespace pb_buildin {
 						return false;
 					}
 
-					size_t l = binary_serializer::bytesize(tag, data);
-					auto bs = binary_serializer::binary_stream(l);
+					size_t l = binary_serializer::bytesize(tag, PB_BUILDIN_BYTESIZE_USE_CACHE, data);
+					auto bs = binary_serializer::write_stream(l);
 
 					if (!binary_serializer::serialize(tag, data, bs)) {
 						return false;
 					}
 
-					bs.set_pos(0);
-					if (!binary_serializer::deserialize(v, bs, nullptr)) {
+					//bs.set_pos(0);
+					auto bs2 = binary_serializer::read_stream(bs.release().release(), l);
+					if (!binary_serializer::deserialize(v, bs2, nullptr)) {
 						return false;
 					}
 				}
@@ -422,10 +423,10 @@ namespace pb_buildin {
 
 			for (auto& item : table)
 			{
-				const std::string name = item->get_name();
-				if (root.isMember(name)) {
+				//const std::string name = item->get_name();
+				if (root.isMember(item->get_name())) {
 
-					if (!item->deserialize(&v, root[name])) {
+					if (!item->deserialize(&v, root[item->get_name()])) {
 						return false;
 					}
 				}

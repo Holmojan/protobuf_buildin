@@ -39,7 +39,8 @@
 
 namespace pb_buildin {
 	namespace json_serializer {
-		typedef Json::Value helper;
+		typedef Json::Value read_helper;
+		typedef Json::Value write_helper;
 	}
 }
 
@@ -48,9 +49,18 @@ namespace pb_buildin {
 #if defined(PB_BUILDIN__USE_BINARY_SERIALIZER)
 
 namespace pb_buildin {
+
+	enum
+	{
+		PB_BUILDIN_BYTESIZE_USE_CACHE = 0x00000001,
+		PB_BUILDIN_BYTESIZE_EMPTY= -1,
+	};
+
 	namespace binary_serializer {
+		template<bool CHECK>
 		class binary_stream;
-		typedef binary_stream helper;
+		typedef binary_stream<true> read_helper;
+		typedef binary_stream<false> write_helper;
 	}
 }
 
