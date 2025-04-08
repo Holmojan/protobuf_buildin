@@ -14,7 +14,7 @@ namespace pb_buildin {
 		{
 		protected:
 			std::unique_ptr<uint8_t[]> _data;
-			uint8_t* _end;
+			const uint8_t* _end;
 			mutable uint8_t* _cursor;
 
 			binary_stream(const binary_stream&) = delete;
@@ -57,7 +57,16 @@ namespace pb_buildin {
 			inline uint8_t* data() {
 				return _data.get();
 			}
-		
+			inline const uint8_t* end() const {
+				return _end;
+			}
+			inline const uint8_t* cursor() const {
+				return _cursor;
+			}
+			inline uint8_t* cursor() {
+				return _cursor;
+			}
+			/*
 			inline size_t size() const {
 				return _end - _data.get();
 			}
@@ -74,7 +83,7 @@ namespace pb_buildin {
 				_cursor = _data.get() + pos;
 				return true;
 			}
-
+			*/
 			bool read(void* ptr, size_t len) const
 			{
 				if (CHECK && _cursor + len > _end) {
@@ -87,14 +96,25 @@ namespace pb_buildin {
 
 			template<typename T>
 			std::enable_if_t<std::is_pod<T>::value, bool> read(T& v) const {
+#if 0
 				return read(&v, sizeof(v));
+#else
+				if (CHECK &&
+					(sizeof(v) == 1 ? (_cursor == _end) : (_cursor + sizeof(v) > _end)))
+				{
+					return false;
+				}
+				v = *reinterpret_cast<T*>(_cursor);
+				_cursor += sizeof(v);
+				return true;
+#endif
 			}
 
 			template<typename T>
 			std::enable_if_t<std::is_unsigned<T>::value, bool> read_varints(T& v)const
 			{
-				v = 0;
-
+#if 0
+				T w = 0;
 				for (size_t i = 0; i < 64/*bit*/; i += 7)
 				{
 					uint8_t t = 0;
@@ -102,14 +122,34 @@ namespace pb_buildin {
 						return false;
 					}
 
-					v |= (T)(t & 0x7f) << i;// in c++, i auto mod bit, may get wrong value
+					w |= (T)(t & 0x7f) << i;// in c++, i auto mod bit, may get wrong value
 
 					if (!(t & 0x80)) {
+						v = w;
 						return true;
 					}
 				}
 
 				return false;
+#else
+				auto w = (T)0x8102040810204080;
+				size_t i = 0;
+				uint8_t t = 0;
+				do
+				{
+					if (!read(t)) {
+						return false;
+					}
+
+					w ^= (T)t << i;// in c++, i auto mod bit, may get wrong value
+					i += 7;
+
+				} while (t & 0x80);
+
+				v = w & (((T)1 << i) - 1);
+				return true;
+
+#endif
 			}
 
 			bool read_string(std::string& s)const
@@ -151,7 +191,18 @@ namespace pb_buildin {
 
 			template<typename T>
 			std::enable_if_t<std::is_pod<T>::value, bool> write(const T& v) {
+#if 0
 				return write(&v, sizeof(v));
+#else
+				if (CHECK && 
+					(sizeof(v) == 1 ? (_cursor == _end) : (_cursor + sizeof(v) > _end)))
+				{
+					return false;
+				}
+				*reinterpret_cast<T*>(_cursor) = v;
+				_cursor += sizeof(v);
+				return true;
+#endif
 			}
 
 			template<typename T>
@@ -975,22 +1026,33 @@ namespace pb_buildin {
 				if (!bs.read_varints(l)) {
 					return false;
 				}
-				l += bs.pos();
+				auto end = bs.cursor() + l;
 
-				while (bs.pos() < l)
+				while (bs.cursor() < end)
 				{
-					v.emplace_back();
-					if (!deserialize(v.back(), bs, member)) {
+					if (!deserialize((
+						v.emplace_back()
+#if !defined(PB_USE_CPP17)
+						, v.back()
+#endif
+						), bs, member))
+					{
 						return false;
 					}
 				}
 
-				return bs.pos() == l;
+				return bs.cursor() == end;
 			}
 			else
 			{
-				v.emplace_back();
-				if (!deserialize(v.back(), bs, member)) {
+				
+				if (!deserialize((
+					v.emplace_back()
+#if !defined(PB_USE_CPP17)
+					, v.back()
+#endif
+					), bs, member)) 
+				{
 					return false;
 				}
 				return true;
@@ -1032,24 +1094,24 @@ namespace pb_buildin {
 		static bool deserialize(pb_message_base& v, const read_stream& bs, const member_register* member)
 		{
 			//ignore_unused(member);
-
-			uint32_t l = 0;
+			auto end = bs.end();
 			if (member) {
+				uint32_t l = 0;
 				if (!bs.read_varints(l)) {
 					return false;
 				}
-				l += bs.pos();
+				end = bs.cursor() + l;
 			}
-			else {
-				l = bs.size();
-			}
+			//else {
+			//	end = bs.end();
+			//}
 
 			auto& table = v.GetDescriptor()->get_member_table();
 			//for (auto& item : table) {
 			//	item->clear(&v);
 			//}
 
-			while (bs.pos() < l)
+			while (bs.cursor() < end)
 			{
 				uint32_t tag = 0;
 				if (!bs.read_varints(tag)) {
@@ -1101,7 +1163,7 @@ namespace pb_buildin {
 				}
 			}
 
-			return bs.pos() == l;
+			return bs.cursor() == end;
 		}
 
 	}
