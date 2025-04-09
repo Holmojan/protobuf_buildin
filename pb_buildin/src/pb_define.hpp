@@ -27,7 +27,8 @@ namespace pb_buildin {
 		PB_TYPE(sfixed32),
 		PB_TYPE(sfixed64),
 		PB_TYPE(string),
-		PB_TYPE(bytes)
+		PB_TYPE(bytes),
+		PB_TYPE(Any)
 	};
 
 	typedef int32_t int32;
@@ -42,6 +43,7 @@ namespace pb_buildin {
 	typedef int64_t sfixed64;
 	typedef std::string string;
 	typedef std::string bytes;
+	typedef std::string Any;
 	/*
 	class pb_message_base;
 
@@ -81,6 +83,7 @@ namespace pb_buildin {
 			return 5;
 		case PB_TYPE(string):
 		case PB_TYPE(bytes):
+		case PB_TYPE(Any):
 			return 2;
 		}
 

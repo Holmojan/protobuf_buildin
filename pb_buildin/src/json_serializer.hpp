@@ -14,6 +14,8 @@ namespace pb_buildin {
 
 	namespace json_serializer
 	{
+
+#define PB_BUILDIN_JSON_UNKNOW_FIELDS	"::_unknown_fields"
 		//////////////////////////////////////////////////////////////////////////
 		static bool serialize(const bool v, Json::Value& root, const member_register* member) 
 		{
@@ -76,7 +78,6 @@ namespace pb_buildin {
 			switch (member->get_type())
 			{
 			case PB_TYPE(bytes):
-
 			{
 				std::string u;
 				if (!en_base64(v, u)) {
@@ -86,9 +87,25 @@ namespace pb_buildin {
 				return true;
 			}
 			case PB_TYPE(string):
-
+			{
 				root = v;
 				return true;
+			}
+			case PB_TYPE(Any):
+			{
+				uint32_t tag = member->get_tag();
+				const std::string& data = v;
+
+				std::string b64;
+				if (!en_base64(data, b64)) {
+					return false;
+				}
+
+				Json::Value& _item = root[PB_BUILDIN_JSON_UNKNOW_FIELDS].append(Json::objectValue);
+				_item["tag"] = tag;
+				_item["data"] = b64;
+				return true;
+			}
 			}
 			return false;
 		}
@@ -167,7 +184,6 @@ namespace pb_buildin {
 				}
 			}
 
-			Json::Value _unknown_fields = Json::Value(Json::arrayValue);
 			for (auto& item : v.GetUnknownFields())
 			{
 				uint32_t tag = item.first;
@@ -178,13 +194,11 @@ namespace pb_buildin {
 					return false;
 				}
 
-				Json::Value& _item = _unknown_fields.append(Json::objectValue);
+				Json::Value& _item = root[PB_BUILDIN_JSON_UNKNOW_FIELDS].append(Json::objectValue);
 				_item["tag"] = tag;
 				_item["data"] = b64;
 			}
-			if (!_unknown_fields.empty()) {
-				root["::_unknown_fields"].swap(_unknown_fields);
-			}
+
 			return true;
 		}
 
@@ -294,6 +308,7 @@ namespace pb_buildin {
 			switch (member->get_type())
 			{
 			case PB_TYPE(bytes):
+			case PB_TYPE(Any):
 			{
 				std::string u = root.asString();
 				if (!de_base64(u, v)) {
@@ -385,34 +400,33 @@ namespace pb_buildin {
 			auto& table = v.GetDescriptor()->get_member_table();
 
 #if defined(PB_BUILDIN__USE_BINARY_SERIALIZER)
+
+			for (auto& _item : root[PB_BUILDIN_JSON_UNKNOW_FIELDS])
 			{
-				for (auto& _item : root["::_unknown_fields"])
-				{
-					if (!_item.isMember("tag") || !_item["tag"].isUInt()) {
-						return false;
-					}
-					uint32_t tag = _item["tag"].asUInt();
+				if (!_item.isMember("tag") || !_item["tag"].isUInt()) {
+					return false;
+				}
+				uint32_t tag = _item["tag"].asUInt();
 
-					if (!_item.isMember("data") || !_item["data"].isString()) {
-						return false;
-					}
-					std::string data;
-					if (!de_base64(_item["data"].asString(), data)) {
-						return false;
-					}
+				if (!_item.isMember("data") || !_item["data"].isString()) {
+					return false;
+				}
+				std::string data;
+				if (!de_base64(_item["data"].asString(), data)) {
+					return false;
+				}
 
-					size_t l = binary_serializer::bytesize(tag, PB_BUILDIN_BYTESIZE_USE_CACHE, data);
-					auto bs = binary_serializer::write_stream(l);
+				size_t l = binary_serializer::bytesize(tag, 0, data);
+				auto bs = binary_serializer::write_stream(l);
 
-					if (!binary_serializer::serialize(tag, data, bs)) {
-						return false;
-					}
+				if (!binary_serializer::serialize(tag, data, bs)) {
+					return false;
+				}
 
-					//bs.set_pos(0);
-					auto bs2 = binary_serializer::read_stream(bs.release().release(), l);
-					if (!binary_serializer::deserialize(v, bs2, nullptr)) {
-						return false;
-					}
+				//bs.set_pos(0);
+				auto bs2 = binary_serializer::read_stream(bs.release().release(), l);
+				if (!binary_serializer::deserialize(v, bs2, nullptr)) {
+					return false;
 				}
 			}
 #else

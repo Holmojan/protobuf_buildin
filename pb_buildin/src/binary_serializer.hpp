@@ -113,7 +113,7 @@ namespace pb_buildin {
 			template<typename T>
 			std::enable_if_t<std::is_unsigned<T>::value, bool> read_varints(T& v)const
 			{
-#if 0
+#if 1
 				T w = 0;
 				for (size_t i = 0; i < 64/*bit*/; i += 7)
 				{
@@ -122,7 +122,7 @@ namespace pb_buildin {
 						return false;
 					}
 
-					w |= (T)(t & 0x7f) << i;// in c++, i auto mod bit, may get wrong value
+					w |= (uint64_t)(t & 0x7f) << i;// in c++, i auto mod bit, may get wrong value
 
 					if (!(t & 0x80)) {
 						v = w;
@@ -133,22 +133,22 @@ namespace pb_buildin {
 				return false;
 #else
 				auto w = (T)0x8102040810204080;
-				size_t i = 0;
-				uint8_t t = 0;
-				do
+				for (size_t i = 0; i < 64/*bit*/; i += 7)
 				{
+					uint8_t t = 0;
 					if (!read(t)) {
 						return false;
 					}
 
-					w ^= (T)t << i;// in c++, i auto mod bit, may get wrong value
-					i += 7;
+					w ^= (uint64_t)t << i;// in c++, i auto mod bit, may get wrong value
 
-				} while (t & 0x80);
+					if (!(t & 0x80)) {
+						v = w & (((T)(1ull << i) << 7) - 1);
+						return true;
+					}
+				}
 
-				v = w & (((T)1 << i) - 1);
-				return true;
-
+				return false;
 #endif
 			}
 
@@ -538,9 +538,8 @@ namespace pb_buildin {
 			//ignore_unused(member);
 			size_t l = PB_BUILDIN_BYTESIZE_EMPTY;
 
-			if (flags & PB_BUILDIN_BYTESIZE_USE_CACHE) {
+			if (flags & PB_BUILDIN_BYTESIZE_SERIALIZE) {
 				l = v.GetSerializedByteSize();
-				v.SetSerializedByteSize(PB_BUILDIN_BYTESIZE_EMPTY);
 			}
 
 			if (l == PB_BUILDIN_BYTESIZE_EMPTY)
@@ -556,9 +555,7 @@ namespace pb_buildin {
 					l += bytesize(item.first, flags, item.second);
 				}
 
-				if (flags & PB_BUILDIN_BYTESIZE_USE_CACHE) {
-					v.SetSerializedByteSize(l);
-				}
+				v.SetSerializedByteSize(l);
 			}
 
 			//return write_stream::bytesize_stream(l);
@@ -694,7 +691,7 @@ namespace pb_buildin {
 
 				size_t l2 = 0;
 				for (size_t i = 0; i < v.size(); i++) {
-					l2 += bytesize(v[i], PB_BUILDIN_BYTESIZE_USE_CACHE, member);
+					l2 += bytesize(v[i], PB_BUILDIN_BYTESIZE_SERIALIZE, member);
 				}
 
 				bs.write_varints(l2);
@@ -755,9 +752,9 @@ namespace pb_buildin {
 				//}
 				size_t l2 = l01;
 				//l2 += write_stream::bytesize_varints(table[0]->get_tag());
-				l2 += bytesize(p.first, PB_BUILDIN_BYTESIZE_USE_CACHE, table[0]);
+				l2 += bytesize(p.first, PB_BUILDIN_BYTESIZE_SERIALIZE, table[0]);
 				//l2 += write_stream::bytesize_varints(table[1]->get_tag());
-				l2 += bytesize(p.second, PB_BUILDIN_BYTESIZE_USE_CACHE, table[1]);
+				l2 += bytesize(p.second, PB_BUILDIN_BYTESIZE_SERIALIZE, table[1]);
 				bs.write_varints(l2);
 
 				//binary_stream bs2;
@@ -851,10 +848,10 @@ namespace pb_buildin {
 
 				size_t l = 0;
 
-				l += bytesize(v, PB_BUILDIN_BYTESIZE_USE_CACHE, nullptr);
+				l += bytesize(v, PB_BUILDIN_BYTESIZE_SERIALIZE, nullptr);
 
 				//for (auto& item : table) {
-				//	l += item->bytesize(&v, PB_BUILDIN_BYTESIZE_USE_CACHE);
+				//	l += item->bytesize(&v, PB_BUILDIN_BYTESIZE_SERIALIZE);
 				//}
 
 				//for (auto& item : v.GetUnknownFields()) {
@@ -1170,7 +1167,7 @@ namespace pb_buildin {
 
 	static size_t bytesize_to_binary(const pb_message_base& pb)
 	{
-		return binary_serializer::bytesize(pb, PB_BUILDIN_BYTESIZE_USE_CACHE, nullptr);
+		return binary_serializer::bytesize(pb, 0, nullptr);
 	}
 
 	static bool serialize_to_binary(const pb_message_base& pb, std::string& buff)

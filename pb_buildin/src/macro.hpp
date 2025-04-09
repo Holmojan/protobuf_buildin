@@ -163,7 +163,11 @@
 			PB_BUILDIN_FLAG_REPEATED)
 
 #	define PB_REPEATED_PACKED(_type, _var, _num)							\
-		static_assert(0 != PB_TYPE(_type), "message can't packed!");		\
+		static_assert(0 != PB_TYPE(_type)									\
+			&& PB_TYPE(string) != PB_TYPE(_type)							\
+			&& PB_TYPE(bytes) != PB_TYPE(_type)								\
+			&& PB_TYPE(Any) != PB_TYPE(_type),								\
+			"only scalar numeric types can packed!");						\
 		PB_REPEATED_SIZE(_type, _var)										\
 		PB_REPEATED_ADD(_type, _var)										\
 		PB_REPEATED_GET(_type, _var)										\
