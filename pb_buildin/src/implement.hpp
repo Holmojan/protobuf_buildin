@@ -10,7 +10,7 @@ namespace pb_buildin {
 		serialize_implement() {}
 	public:
 		static serialize_implement* get_instance() {
-			static serialize_implement instance;
+			PB_STATIC(serialize_implement instance);
 			return &instance;
 		}
 		virtual void clear(void* data) {
@@ -71,7 +71,7 @@ namespace pb_buildin {
 		void MergeFrom(const pb_message& from) {
 			deserialize_from_binary(from.SerializeAsString(), *this);
 		}
-		size_t ByteSize() {
+		size_t ByteSize() const{
 			return bytesize_to_binary(*this);
 		}
 #endif

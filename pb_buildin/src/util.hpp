@@ -3,6 +3,18 @@
 #define __PB_BUILDIN__UTIL_HPP__
 
 namespace pb_buildin {
+
+#if defined(_MSC_VER) && _MSC_VER <= 1800
+	inline std::recursive_mutex& get_static_constructor_lock(int init = 0) {
+		static std::atomic<int> flag = 0;
+		assert(0 != (flag += init) && "need call pb_buildin_init");
+		static std::recursive_mutex m;
+		return m;
+	}
+	inline void pb_buildin_init() {
+		get_static_constructor_lock(1);
+	}
+#endif
 	/*
 	inline std::string ws_to_utf8(const std::wstring& src) {
 		std::wstring_convert<std::codecvt_utf8<std::wstring::value_type>> conv;
@@ -29,7 +41,7 @@ namespace pb_buildin {
 	{
 		std::string cipher;
 
-		static char table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+		PB_STATIC(char table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 
 		if (len == 0) {
 			return cipher;
@@ -62,8 +74,8 @@ namespace pb_buildin {
 
 	inline bool de_base64(const std::string& cipher, std::string& plain)
 	{
-		static char table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-		static int inv_table[256] = { 0 };
+		PB_STATIC(char table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+		PB_STATIC(int inv_table[256] = { 0 });
 
 		size_t cipher_size = cipher.size();
 		while (cipher_size && cipher[cipher_size - 1] == '=') {
@@ -184,6 +196,7 @@ namespace pb_buildin {
 
 	template<typename... ARGS>
 	using type_select_t = typename type_select<ARGS...>::type;
+
 
 }
 

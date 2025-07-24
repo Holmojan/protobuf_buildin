@@ -93,7 +93,7 @@ namespace pb_buildin {
 		}
 
 		const value_type& get(const key_type& k)const {
-			static value_type def = {};
+			PB_STATIC(value_type def = {});
 			auto itor = this->find(k);
 			return (itor != this->end() ? itor->second : def);
 		}
@@ -191,7 +191,7 @@ namespace pb_buildin {
 
 		const T& get()const
 		{
-			static T def = {};
+			PB_STATIC(T def = {});
 			return (_val ? *_val : def);
 		}
 

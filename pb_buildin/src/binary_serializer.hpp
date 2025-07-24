@@ -469,11 +469,11 @@ namespace pb_buildin {
 			static_assert(std::is_integral<key_type>::value
 				|| std::is_same<key_type, std::string>::value, "illegal key type");
 
-			static const pair_type item;
+			PB_STATIC(const pair_type item);
 			auto& table = item.GetDescriptor()->get_member_table();
-			static const size_t l01 =
+			PB_STATIC(const size_t l01 =
 				write_stream::bytesize_varints(table[0]->get_tag()) +
-				write_stream::bytesize_varints(table[1]->get_tag());
+				write_stream::bytesize_varints(table[1]->get_tag()));
 
 			size_t l = 0;
 			l += v.size() * write_stream::bytesize_varints(member->get_tag());
@@ -732,11 +732,11 @@ namespace pb_buildin {
 			static_assert(std::is_integral<key_type>::value
 				|| std::is_same<key_type, std::string>::value, "illegal key type");
 
-			static const pair_type item;
+			PB_STATIC(const pair_type item);
 			auto& table = item.GetDescriptor()->get_member_table();
-			static const size_t l01 =
+			PB_STATIC(const size_t l01 =
 				write_stream::bytesize_varints(table[0]->get_tag()) +
-				write_stream::bytesize_varints(table[1]->get_tag());
+				write_stream::bytesize_varints(table[1]->get_tag()));
 
 			for (auto& p : v)
 			{

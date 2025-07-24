@@ -18,8 +18,8 @@
 			_name(const class_register* p) PB_MEMBER_BODY(: _base(p) { });	\
 		public:																\
 			static const class_register* GetDescriptor() PB_MEMBER_BODY({	\
-				static class_register _register;							\
-				static _name instance(&_register);							\
+				PB_STATIC(class_register _register);						\
+				PB_STATIC(_name instance(&_register));						\
 				return ((pb_message&)instance).GetDescriptor();});			\
 			_name() PB_MEMBER_BODY(: _base(GetDescriptor()) { });			\
 			_name(const _name& v) PB_MEMBER_BODY(: _base(GetDescriptor()) {	\

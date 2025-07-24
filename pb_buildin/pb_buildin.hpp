@@ -6,6 +6,17 @@
 #	if _MSVC_LANG >= 201703L
 #		define PB_USE_CPP17
 #	endif
+#	if _MSC_VER <= 1800
+#		include <assert.h>
+#		include <atomic>
+#		include <mutex>
+#		define PB_STATIC(...)	\
+			get_static_constructor_lock().lock();	\
+			static __VA_ARGS__;						\
+			get_static_constructor_lock().unlock()
+#	else
+#		define PB_STATIC(...)	static __VA_ARGS__
+#	endif
 #elif defined(__GNUC__)
 #	pragma GCC diagnostic ignored "-Winvalid-offsetof"
 
@@ -15,6 +26,7 @@
 #	if __cplusplus >= 201703L
 #		define PB_USE_CPP17
 #	endif
+#	define PB_STATIC(...)	static __VA_ARGS__
 #else
 #	error __FILE__": unsupported ide, compile stoped!" 
 #endif
