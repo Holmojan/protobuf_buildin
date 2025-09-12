@@ -37,7 +37,7 @@ namespace pb_buildin {
 		return name;
 	}
 
-	inline std::string en_base64(const void* data, size_t len)
+	inline std::string en_base64(const void* data, size_t len, bool padding = false)
 	{
 		std::string cipher;
 
@@ -63,12 +63,18 @@ namespace pb_buildin {
 			}
 		}
 
+		if (padding) {
+			while (cipher.size() % 4 != 0) {
+				cipher.push_back('=');
+			}
+		}
+
 		return cipher;
 	}
 
-	inline bool en_base64(const std::string& plain, std::string& cipher)
+	inline bool en_base64(const std::string& plain, std::string& cipher, bool padding = false)
 	{
-		cipher = en_base64(plain.data(), plain.size());
+		cipher = en_base64(plain.data(), plain.size(), padding);
 		return true;
 	}
 
