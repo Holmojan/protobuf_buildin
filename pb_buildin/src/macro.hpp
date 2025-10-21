@@ -67,7 +67,9 @@
 				(proto_type)(PB_TYPE(_raw_type)));							\
 			_info->tag = get_tag(_num, _info->wire_type, _flag);			\
 			_info->ptr_interface = serialize_implement<						\
-				type_identity_t<_type>>::get_instance();					\
+				type_identity_t<_type>,										\
+				(PB_BUILDIN_FLAG_BINARY | PB_BUILDIN_FLAG_JSON)				\
+			>::get_instance();												\
 		}
 
 #if defined(_MSC_VER) && _MSC_VER <= 1800

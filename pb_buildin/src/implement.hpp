@@ -5,14 +5,9 @@
 namespace pb_buildin {
 
 	template<typename T>
-	class serialize_implement :public serialize_interface {
-	protected:
-		serialize_implement() {}
+	class serialize_implement_base : public virtual serialize_interface
+	{
 	public:
-		static serialize_implement* get_instance() {
-			PB_STATIC(serialize_implement instance);
-			return &instance;
-		}
 		virtual void clear(void* data) {
 			(*static_cast<T*>(data)).clear();
 		}
@@ -20,26 +15,85 @@ namespace pb_buildin {
 		virtual void swap(void* data, void* data2) {
 			(*static_cast<T*>(data)).swap(*static_cast<T*>(data2));
 		}
+	};
 
-#if defined(PB_BUILDIN__USE_BINARY_SERIALIZER)
-		virtual bool serialize(const void* data, binary_serializer::write_helper& helper, const member_register* info) {
-			return binary_serializer::serialize(*static_cast<const T*>(data), helper, info);
+	template<typename T, uint32_t F>
+	class serialize_implement_binary;
+
+	template<typename T>
+	class serialize_implement_binary<T, 0> : public virtual serialize_interface
+	{
+	public:
+		virtual bool serialize(const void* data, const binary_serializer::write_helper& helper, const member_register* info) {
+			return false;
 		}
 		virtual bool deserialize(void* data, const binary_serializer::read_helper& helper, const member_register* info) {
-			return binary_serializer::deserialize(*static_cast<T*>(data), helper, info);
+			return false;
+		}
+		virtual size_t bytesize(const void* data, uint32_t flags, const member_register* info) {
+			return 0;
+		}
+	};
+
+#if defined(PB_BUILDIN__USE_BINARY_SERIALIZER)
+	template<typename T>
+	class serialize_implement_binary<T, PB_BUILDIN_FLAG_BINARY> : public virtual serialize_interface
+	{
+	public:
+		virtual bool serialize(const void* data, const binary_serializer::write_helper& helper, const member_register* info) {
+			return binary_serializer::serialize(*static_cast<const T*>(data), helper.ref, info);
+		}
+		virtual bool deserialize(void* data, const binary_serializer::read_helper& helper, const member_register* info) {
+			return binary_serializer::deserialize(*static_cast<T*>(data), helper.ref, info);
 		}
 		virtual size_t bytesize(const void* data, uint32_t flags, const member_register* info) {
 			return binary_serializer::bytesize(*static_cast<const T*>(data), flags, info);
 		}
+	};
 #endif
-#if defined(PB_BUILDIN__USE_JSON_SERIALIZER)
-		virtual bool serialize(const void* data, json_serializer::write_helper& helper, const member_register* info) {
-			return json_serializer::serialize(*static_cast<const T*>(data), helper, info);
+
+	template<typename T, uint32_t F>
+	class serialize_implement_json;
+
+	template<typename T>
+	class serialize_implement_json<T, 0> : public virtual serialize_interface
+	{
+	public:
+		virtual bool serialize(const void* data, const json_serializer::write_helper& helper, const member_register* info) {
+			return false;
 		}
 		virtual bool deserialize(void* data, const json_serializer::read_helper& helper, const member_register* info) {
-			return json_serializer::deserialize(*static_cast<T*>(data), helper, info);
+			return false;
 		}
+	};
+
+#if defined(PB_BUILDIN__USE_JSON_SERIALIZER)
+	template<typename T>
+	class serialize_implement_json<T, PB_BUILDIN_FLAG_JSON> : public virtual serialize_interface
+	{
+	public:
+		virtual bool serialize(const void* data, const json_serializer::write_helper& helper, const member_register* info) {
+			return json_serializer::serialize(*static_cast<const T*>(data), helper.ref, info);
+		}
+		virtual bool deserialize(void* data, const json_serializer::read_helper& helper, const member_register* info) {
+			return json_serializer::deserialize(*static_cast<T*>(data), helper.ref, info);
+		}
+	};
 #endif
+
+	template<typename T, uint32_t F>
+	class serialize_implement :
+		public serialize_implement_base  <T>,
+		public serialize_implement_binary<T, (F & PB_BUILDIN_FLAG_BINARY)>,
+		public serialize_implement_json  <T, (F & PB_BUILDIN_FLAG_JSON)>
+	{
+	protected:
+		serialize_implement() {}
+	public:
+		static serialize_implement* get_instance() {
+			PB_STATIC(serialize_implement instance);
+			return &instance;
+		}
 	};
 
 	class pb_message : public pb_message_base

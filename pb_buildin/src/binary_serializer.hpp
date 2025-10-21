@@ -312,6 +312,17 @@ namespace pb_buildin {
 
 		typedef binary_stream<true> read_stream;
 		typedef binary_stream<false> write_stream;
+
+		class read_helper {
+		public:
+			const read_stream& ref;
+			read_helper(const read_stream& stream) :ref(stream) {}
+		};
+		class write_helper {
+		public:
+			write_stream& ref;
+			write_helper(write_stream& stream) :ref(stream) {}
+		};
 		//////////////////////////////////////////////////////////////////////////
 
 		static size_t bytesize(const bool v, uint32_t flags, const member_register* member)
@@ -424,6 +435,61 @@ namespace pb_buildin {
 			return write_stream::bytesize_string(v);
 		}
 
+		static size_t bytesize(uint32_t tag, uint32_t flags, const std::string& data)
+		{
+			size_t l = 0;
+			l += write_stream::bytesize_varints(tag);
+
+			switch (tag & 0x7)
+			{
+			case 1:
+			case 5:
+			case 0:
+				l += write_stream::bytesize(data.data(), data.size());
+				break;
+			case 2:
+				l += write_stream::bytesize_string(data);
+				break;
+			default:
+				break;
+			}
+
+			return l;
+		}
+
+		static size_t bytesize(const pb_message_base& v, uint32_t flags, const member_register* member)
+		{
+			//ignore_unused(member);
+			size_t l = PB_BUILDIN_BYTESIZE_EMPTY;
+
+			if (flags & PB_BUILDIN_BYTESIZE_SERIALIZE) {
+				l = v.GetSerializedByteSize();
+			}
+
+			if (l == PB_BUILDIN_BYTESIZE_EMPTY)
+			{
+				l = 0;
+
+				auto& table = v.GetDescriptor()->get_member_table();
+				for (auto& item : table) {
+					l += item->bytesize(&v, flags);
+				}
+
+				for (auto& item : v.GetUnknownFields()) {
+					l += bytesize(item.first, flags, item.second);
+				}
+
+				v.SetSerializedByteSize(l);
+			}
+
+			//return write_stream::bytesize_stream(l);
+			if (member) {
+				l += write_stream::bytesize_varints(l);
+			}
+
+			return l;
+		}
+
 		template<typename T>
 		static size_t bytesize(const pb_repeated<T>& v, uint32_t flags, const member_register* member)
 		{
@@ -511,60 +577,6 @@ namespace pb_buildin {
 			return l;
 		}
 
-		static size_t bytesize(uint32_t tag, uint32_t flags, const std::string& data)
-		{
-			size_t l = 0;
-			l += write_stream::bytesize_varints(tag);
-
-			switch (tag & 0x7)
-			{
-			case 1:
-			case 5:
-			case 0:
-				l += write_stream::bytesize(data.data(), data.size());
-				break;
-			case 2:
-				l += write_stream::bytesize_string(data);
-				break;
-			default:
-				break;
-			}
-
-			return l;
-		}
-
-		static size_t bytesize(const pb_message_base& v, uint32_t flags, const member_register* member)
-		{
-			//ignore_unused(member);
-			size_t l = PB_BUILDIN_BYTESIZE_EMPTY;
-
-			if (flags & PB_BUILDIN_BYTESIZE_SERIALIZE) {
-				l = v.GetSerializedByteSize();
-			}
-
-			if (l == PB_BUILDIN_BYTESIZE_EMPTY)
-			{
-				l = 0;
-
-				auto& table = v.GetDescriptor()->get_member_table();
-				for (auto& item : table) {
-					l += item->bytesize(&v, flags);
-				}
-
-				for (auto& item : v.GetUnknownFields()) {
-					l += bytesize(item.first, flags, item.second);
-				}
-
-				v.SetSerializedByteSize(l);
-			}
-
-			//return write_stream::bytesize_stream(l);
-			if (member) {
-				l += write_stream::bytesize_varints(l);
-			}
-
-			return l;
-		}
 		//////////////////////////////////////////////////////////////////////////
 
 		static bool serialize(const	bool v, write_stream& bs, const member_register* member)
@@ -863,7 +875,7 @@ namespace pb_buildin {
 
 			for (auto& item : table)
 			{
-				if (!item->serialize(&v, bs)) {
+				if (!item->serialize(&v, write_helper(bs))) {
 					return false;
 				}
 			}
@@ -1119,7 +1131,7 @@ namespace pb_buildin {
 					[=](const member_register* item) { return item->get_tag() == tag; });
 				if (itor != table.end())
 				{
-					if (!(*itor)->deserialize(&v, bs)) {
+					if (!(*itor)->deserialize(&v, read_helper(bs))) {
 						return false;
 					}
 				}

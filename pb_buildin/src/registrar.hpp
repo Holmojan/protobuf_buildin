@@ -64,7 +64,7 @@ namespace pb_buildin {
 		}
 
 		template<typename U>
-		bool serialize(const void* base_ptr, U& u)const {
+		bool serialize(const void* base_ptr, const U& u)const {
 			return info.ptr_interface->serialize(static_cast<const uint8_t*>(base_ptr) + info.offset, u, this);
 		}
 		template<typename U>
