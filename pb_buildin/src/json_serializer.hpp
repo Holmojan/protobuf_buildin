@@ -21,6 +21,14 @@ namespace pb_buildin {
 		public:
 			const Json::Value& ref;
 			read_helper(const Json::Value& root) :ref(root) {}
+
+			template <typename T, typename U>
+			static inline bool InRange(double d, T min, U max) {
+				// The casts can lose precision, but we are looking only for
+				// an approximate range. Might fail on edge cases though. ~cdunn
+				//return d >= static_cast<double>(min) && d <= static_cast<double>(max);
+				return d >= min && d <= max;
+			}
 		};
 		class write_helper {
 		public:
@@ -258,14 +266,19 @@ namespace pb_buildin {
 		static bool deserialize(int64_t& v, const Json::Value& root, const member_register* member)
 		{
 			ignore_unused(member);
+#if defined(JSON_HAS_INT64)
+			if (root.isInt64() ||
+				(root.type() == Json::ValueType::realValue
+					&& read_helper::InRange(root.asDouble(), Json::Value::minInt64, Json::Value::maxInt64)))
+			{
+				v = root.asInt64();
+				return true;
+			}
+#endif
 			if (!root.isConvertibleTo(Json::ValueType::intValue)) {
 				return false;
 			}
-#if defined(JSON_HAS_INT64)
-			v = root.asInt64();
-#else
 			v = root.asInt();
-#endif
 			return true;
 		}
 
@@ -281,14 +294,20 @@ namespace pb_buildin {
 		static bool deserialize(uint64_t& v, const Json::Value& root, const member_register* member)
 		{
 			ignore_unused(member);
+#if defined(JSON_HAS_INT64)
+			if (root.isUInt64() ||
+				(root.type() == Json::ValueType::realValue 
+					&& read_helper::InRange(root.asDouble(), 0, Json::Value::maxUInt64)))
+			{
+
+				v = root.asUInt64();
+				return true;
+			}
+#endif
 			if (!root.isConvertibleTo(Json::ValueType::uintValue)) {
 				return false;
 			}
-#if defined(JSON_HAS_INT64)
-			v = root.asUInt64();
-#else
 			v = root.asUInt();
-#endif
 			return true; 
 		}
 

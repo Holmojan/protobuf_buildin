@@ -11,10 +11,12 @@ namespace pb_buildin {
 		static std::recursive_mutex m;
 		return m;
 	}
-	inline void pb_buildin_init() {
-		get_static_constructor_lock(1);
-	}
 #endif
+	inline void pb_buildin_init() {
+#if defined(_MSC_VER) && _MSC_VER <= 1800
+		get_static_constructor_lock(1);
+#endif
+	}
 	/*
 	inline std::string ws_to_utf8(const std::wstring& src) {
 		std::wstring_convert<std::codecvt_utf8<std::wstring::value_type>> conv;
