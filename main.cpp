@@ -23,9 +23,12 @@ namespace pb_buildin {
 
 int main()
 {
+	pb_buildin::pb_buildin_init();
+	
 	pb_buildin::Test::A a;
 	a.set_x(123);
 	auto s = a.SerializeAsString();
 
 	return 0;
 }
+
